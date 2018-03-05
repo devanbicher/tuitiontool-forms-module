@@ -1,5 +1,40 @@
 <?php
 
   /*This is a comment to start my file */
-
+ 
   /*this is another line of code to check git */
+
+  /* add a menu item */
+  /* the menu item goes to a form, displaying all entries for a selected term (for that content type) */
+  /***  try to display all entry types, the viewing by coordinators should be restricted to what they can see anyway */
+
+
+  /* make a menu item to display the form generating menu item */
+
+function tuition_tool_forms_menu(){
+  $menu_items = array();
+
+  $menu_items['/admin/content/tuition_tool_forms'] = array(
+       'title' => 'Tuition Tool Forms',
+       'description' => 'Generate the Tution Tool TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+			                                   );
+						   
+							  
+  return $menu_items;
+  }
+
+
+function tuition_tool_forms_ta_ga_form(){
+  $form = array();
+
+  /*first let the user choose the field, it will be a required field, but it will be defaulted to the variable for the current term.
+    This will force me to make the first tuition_tool module required. which is good anyway. */
+
+  /* next make a set of checkboxes, one for each piece of content in which the aid type is TA */
+
+
+  return system_settings_form($form);
+}
+  

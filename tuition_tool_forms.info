@@ -1,3 +1,5 @@
 name = Tuition Tool Form Generation
 description = This module allows you to generate forms specific to Lehigh University College of Arts and Sciences for data entered with the help of the Tuition Tool module
 core = 7.x
+
+/*I will need to put a requirement here probably to make sure the tution tool module is enabled first */
