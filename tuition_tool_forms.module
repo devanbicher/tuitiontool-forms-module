@@ -26,6 +26,13 @@ function tuition_tool_forms_menu(){
   }
 
 
+function get_ta_entries($dept, $term){
+  /*for a give department and term find all of the aid type that are TA,
+    return an array that has names dates and stipend. */
+  
+
+}
+
 function tuition_tool_forms_ta_ga_form(){
   $form = array();
 
@@ -33,6 +40,9 @@ function tuition_tool_forms_ta_ga_form(){
     This will force me to make the first tuition_tool module required. which is good anyway. */
 
   /* next make a set of checkboxes, one for each piece of content in which the aid type is TA */
+
+  
+
 
 
   return system_settings_form($form);
