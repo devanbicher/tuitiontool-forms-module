@@ -12,7 +12,7 @@
 function tuition_tool_forms_menu(){
   $menu_items = array();
 
-  $menu_items['/admin/content/tuition_tool_forms'] = array(
+  $menu_items['admin/content/tuition_tool_forms'] = array(
        'title' => 'Tuition Tool Forms',
        'description' => 'Generate the Tution Tool TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
@@ -23,64 +23,70 @@ function tuition_tool_forms_menu(){
   return $menu_items;
   }
 
-function get_years(){
+
+function get_years_for_forms(){
   //This function just generates all of the available academic years
+  //$years = drupal_map_assoc(array(t("2017"),t("2018")));
   $years = array('2017','2018');
 
   return $years;
 }
 
-function get_terms($year){
+function get_terms_for_forms($year){
   //need to use a query function to get terms for the current year.
-  $terms = array('201710', '201720','201810','201820');
+  $terms = array('201710','201720','201810','201820');
 
   return $terms;
 
 }
 
-
+/*
 function get_ta_entries($dept, $term){
-  /*for a give department and term find all of the aid type that are TA,
-    return an array that has names dates and stipend. */
+  //for a give department and term find all of the aid type that are TA,
+    // return an array that has names dates and stipend.
 
 }
+*/
+
 
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
-  /*  $form = array(); */
 
-  /*first let the user choose the field, it will be a required field, but it will be defaulted to the variable for the current term.
-    This will force me to make the first tuition_tool module required. which is good anyway. */
+  // first let the user choose the field, it will be a required field, but it will be defaulted to the variable for the current term.
+  //  This will force me to make the first tuition_tool module required. which is good anyway.
 
-  /* next make a set of checkboxes, one for each piece of content in which the aid type is TA */
+  // next make a set of checkboxes, one for each piece of content in which the aid type is TA //
 
-  /* the checkboxes should have the key be the node number so I know which nodes to pull data from. */
+  // the checkboxes should have the key be the node number so I know which nodes to pull data from. //
+
   $temp_year = 'my_year';
 
-  $years = get_years();
-  $terms = get_terms($temp_year);
-  //$defaults = get_defaults
-  
+  $formyears = get_years_for_forms();
+  $formterms = get_terms_for_forms($temp_year);
+  //$defaults = get_defaults  
 
-  $form['set_default_actions'] = array(
+  $form['temp_markup'] = array(
+			       '#markup' => t('This is some markup to get this pagen started'),
+			       );		       
+  
+  $form['set_ta_ga_actions'] = array(
 	  '#type' => 'actions',
 	  '#weight' => 0,
 					  );
-
-  $form['set_default_actions']['set_form_year'] = array(
-	'#type' = 'select',						
-	'#title' = t('Please select the year from which to generate this form'),
-	'#options' = $years,
+  
+  $form['set_ta_ga_actions']['set_form_year'] = array(
+	'#type' => 'select',						
+	'#title' => t('Please select the year from which to generate this form'),
+	'#options' => $formyears,
 	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
-							);
-
-  $form['set_default_actions']['set_form_term'] = array(
+						      );
+  
+  $form['set_ta_ga_actions']['set_form_term'] = array(
 	'#type' => 'select',
 	'#title' => t('Please select Term from which to generate forms'),
-	'#options' => $terms,
+	'#options' => $formterms,
 	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
-							);							
-						    
+							);
+ 
 
   return system_settings_form($form);
 }
-  
