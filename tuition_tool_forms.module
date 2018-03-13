@@ -1,15 +1,13 @@
 <?php
 
-  /*This is a comment to start my file */
- 
-  /*this is another line of code to check git */
-
   /* add a menu item */
   /* the menu item goes to a form, displaying all entries for a selected term (for that content type) */
   /***  try to display all entry types, the viewing by coordinators should be restricted to what they can see anyway */
 
-
   /* make a menu item to display the form generating menu item */
+
+  /* MAKE SURE NONE OF MY FUNCTIONS CONFLICT WITH MY OTHER MODULE. */
+
 
 function tuition_tool_forms_menu(){
   $menu_items = array();
@@ -19,31 +17,69 @@ function tuition_tool_forms_menu(){
        'description' => 'Generate the Tution Tool TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
        'page arguments' => array('tuition_tool_forms_ta_ga_form'),
-			                                   );
-						   
-							  
+       'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
+							   );
+							 
   return $menu_items;
   }
+
+function get_years(){
+  //This function just generates all of the available academic years
+  $years = array('2017','2018');
+
+  return $years;
+}
+
+function get_terms($year){
+  //need to use a query function to get terms for the current year.
+  $terms = array('201710', '201720','201810','201820');
+
+  return $terms;
+
+}
 
 
 function get_ta_entries($dept, $term){
   /*for a give department and term find all of the aid type that are TA,
     return an array that has names dates and stipend. */
-  
 
 }
 
-function tuition_tool_forms_ta_ga_form(){
-  $form = array();
+function tuition_tool_forms_ta_ga_form($form, &$form_state){
+  /*  $form = array(); */
 
   /*first let the user choose the field, it will be a required field, but it will be defaulted to the variable for the current term.
     This will force me to make the first tuition_tool module required. which is good anyway. */
 
   /* next make a set of checkboxes, one for each piece of content in which the aid type is TA */
 
+  /* the checkboxes should have the key be the node number so I know which nodes to pull data from. */
+  $temp_year = 'my_year';
+
+  $years = get_years();
+  $terms = get_terms($temp_year);
+  //$defaults = get_defaults
   
 
+  $form['set_default_actions'] = array(
+	  '#type' => 'actions',
+	  '#weight' => 0,
+					  );
 
+  $form['set_default_actions']['set_form_year'] = array(
+	'#type' = 'select',						
+	'#title' = t('Please select the year from which to generate this form'),
+	'#options' = $years,
+	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
+							);
+
+  $form['set_default_actions']['set_form_term'] = array(
+	'#type' => 'select',
+	'#title' => t('Please select Term from which to generate forms'),
+	'#options' => $terms,
+	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
+							);							
+						    
 
   return system_settings_form($form);
 }
