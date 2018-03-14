@@ -26,19 +26,92 @@ function tuition_tool_forms_menu(){
 
 function get_years_for_forms(){
   //This function just generates all of the available academic years
-  //$years = drupal_map_assoc(array(t("2017"),t("2018")));
-  $years = array('2017','2018');
 
+  //$years = array('2017','2018'); DEBUG
+  $years = array();
+  
+  $ent_query = new EntityFieldQuery();
+  //new entity query to get the years
+  $ent_query->entityCondition('entity_type','taxonomy_term')
+    ->entityCondition('bundle','academic_year');
+
+  $match_ents = $ent_query->execute(); //execute the query
+  
+  foreach($match_ents['taxonomy_term'] as $myent){
+    $match_ids[] = $myent->tid; //make a list of matching term ids
+  }
+  $load_years = entity_load('taxonomy_term',$match_ids); //load the objects into an array
+  
+  foreach($load_years as $curyear){
+    $years[$curyear->tid] = $curyear->name; //make an array with a list of year name and taxonomy term id
+  }
+
+  arsort($years);
   return $years;
 }
 
+
+
 function get_terms_for_forms($year){
   //need to use a query function to get terms for the current year.
-  $terms = array('201710','201720','201810','201820');
+
+  //$terms = array('201710','201720','201810','201820'); DEBUG
+
+  $terms = array();
+  
+  $ent_query = new EntityFieldQuery;
+
+  $ent_query->entityCondition('entity_type','taxonomy_term')
+    ->entityCondition('bundle','termcodes');
+  
+  $match_ents = $ent_query->execute();
+  
+  foreach($match_ents['taxonomy_term'] as $myent){
+    $match_ids[] = $myent->tid;
+  }
+  $load_terms = entity_load('taxonomy_term',$match_ids);
+
+  uasort($load_terms,'sort_terms_by_code');  //This function is in the tuition tool module
+  foreach($load_terms as $curterm){
+    $terms[$curterm->tid] = $curterm->name;
+  }
 
   return $terms;
 
 }
+
+function get_ta_students($temp_term, $temp_year){
+  $year = variable_get('default_year');
+  $term = variable_get('default_term'); //place holder until I can get choosing different terms worked out
+  $entry = 'physics_aid_entry'; //place holder until I can work out a better way to figure out how to properly get the right bundle.
+  $aid = 'physics_aid_type';
+ 
+  //First get the tid of the aid type
+
+  $aid_query = new EntityFieldQuery;
+  $aid_query-> entityCondition('entity_type','node')
+    ->entityCondition('bundle',$aid)
+    ->propertyCondition('title','TA','=')
+    ->propertyCondition('status',NODE_PUBLISHED)
+    ->fieldCondition('field_term_year','tid',$year,'=');
+  
+  $match_aid_query = $aid_query->execute();
+  
+  dsm(count($match_aid_query));
+
+  $aid_result = array_values($match_aid_query['node']);
+  $aid_nid = $aid_result[0]->nid;
+  
+  dsm($aid_nid);
+
+  //NOW DO A FIELD QUERY ON THE AID ENTRY AND RETURN A LIST OF RELEVANT VALUES INDEXED BY THE NID
+
+
+  $students = array('bob','jill');
+
+  return $students;
+}
+
 
 /*
 function get_ta_entries($dept, $term){
@@ -59,15 +132,18 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
   // the checkboxes should have the key be the node number so I know which nodes to pull data from. //
 
   $temp_year = 'my_year';
+  $temp_term = 'my_term';
 
   $formyears = get_years_for_forms();
   $formterms = get_terms_for_forms($temp_year);
-  //$defaults = get_defaults  
+  $formstudents = get_ta_students($temp_term, $temp_year);
 
+  /*  DEBUG
   $form['temp_markup'] = array(
 			       '#markup' => t('This is some markup to get this pagen started'),
 			       );		       
-  
+  */  
+
   $form['set_ta_ga_actions'] = array(
 	  '#type' => 'actions',
 	  '#weight' => 0,
@@ -77,16 +153,27 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#type' => 'select',						
 	'#title' => t('Please select the year from which to generate this form'),
 	'#options' => $formyears,
-	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
+	'#required' => TRUE,
+	'#default_value' => variable_get('default_year') //THIS IS one reason WHY TUITION TOOL MODULE IS REQUIRED.
 						      );
   
+  // I am going to need to alter this if A different option is selected above. 
   $form['set_ta_ga_actions']['set_form_term'] = array(
 	'#type' => 'select',
 	'#title' => t('Please select Term from which to generate forms'),
 	'#options' => $formterms,
-	//'#default_value' => get_variable('default year') THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
+      	'#default_value' => variable_get('default_term') //THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
 							);
- 
+
+  $form['select_ta_ga_students'] = array(
+	'#type' => 'actions',
+					 );
+
+  $form['select_ta_ga_students']['choose_students'] = array(
+	'#type' => 'checkboxes',
+	'#options' => drupal_map_assoc($formstudents),
+							    );
+  
 
   return system_settings_form($form);
 }
