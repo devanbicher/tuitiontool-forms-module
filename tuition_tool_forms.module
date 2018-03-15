@@ -85,7 +85,8 @@ function get_ta_students($temp_term, $temp_year){
   $term = variable_get('default_term'); //place holder until I can get choosing different terms worked out
   $entry = 'physics_aid_entry'; //place holder until I can work out a better way to figure out how to properly get the right bundle.
   $aid = 'physics_aid_type';
- 
+  $students = array();
+
   //First get the tid of the aid type
 
   $aid_query = new EntityFieldQuery;
@@ -96,18 +97,35 @@ function get_ta_students($temp_term, $temp_year){
     ->fieldCondition('field_term_year','tid',$year,'=');
   
   $match_aid_query = $aid_query->execute();
-  
-  dsm(count($match_aid_query));
 
   $aid_result = array_values($match_aid_query['node']);
   $aid_nid = $aid_result[0]->nid;
-  
-  dsm($aid_nid);
 
   //NOW DO A FIELD QUERY ON THE AID ENTRY AND RETURN A LIST OF RELEVANT VALUES INDEXED BY THE NID
 
+  $entry_query = new EntityFieldQuery;
+  $entry_query-> entityCondition('entity_type','node')
+    ->entityCondition('bundle',$entry)
+    ->propertyCondition('status',NODE_PUBLISHED)
+    ->fieldCondition('field_stipend','value',0,'>')//STIPEND
+    ->fieldCondition('field_term','tid',$term,'=')
+    ->fieldCondition('field_aid_type','target_id',$aid_nid,'=');
+  
+  $match_entries = $entry_query->execute();
+  
+  foreach($match_entries['node'] as $myentry){
+    $match_ids[] = $myentry->nid;
+  }
+  $load_entries = entity_load('node',$match_ids);
+  
+  foreach($load_entries as $curentry){
+    $students[$curentry->nid] = $curentry->field_student_last_name['und'][0]['value'].", ".
+      $curentry->field_student_first_name['und'][0]['value'].". Stip: $".
+      $curentry->field_stipend['und'][0]['value'];
+    //dsm($curentry);
+  }
 
-  $students = array('bob','jill');
+  //$students = array('bob','jill');
 
   return $students;
 }
@@ -173,7 +191,19 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#type' => 'checkboxes',
 	'#options' => drupal_map_assoc($formstudents),
 							    );
+  $form['submit'] = array(
+			  '#type' => 'submit',
+			  '#value' => 'submit',
+			  '#submit' => array('tuition_tool_forms_ta_ga_form_submit'),
+			  );
+  
+
+  //  dsm($form);
   
 
   return system_settings_form($form);
+}
+
+function tuition_tool_forms_ta_ga_form_submit($form, &$form_state){
+  drupal_set_message("lets see what this looks like",'status');
 }
