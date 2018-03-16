@@ -119,16 +119,24 @@ function get_ta_students($temp_term, $temp_year){
   $load_entries = entity_load('node',$match_ids);
   
   foreach($load_entries as $curentry){
-    $students[$curentry->nid] = $curentry->field_student_last_name['und'][0]['value'].", ".
-      $curentry->field_student_first_name['und'][0]['value'].". Stip: $".
-      $curentry->field_stipend['und'][0]['value'];
-    //dsm($curentry);
+    $students[$curentry->nid] = array(
+
+      'last' => $curentry->field_student_last_name['und'][0]['value'],
+      'first' => $curentry->field_student_first_name['und'][0]['value'],
+      'effort' => $curentry->field_effort['und'][0]['value'],
+      'periods' => $curentry->field_pay_periods['und'][0]['value'],
+      'stipend' =>$curentry->field_stipend['und'][0]['value']
+				      );
   }
 
   //$students = array('bob','jill');
 
   return $students;
 }
+
+
+
+
 
 
 /*
@@ -154,8 +162,17 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 
   $formyears = get_years_for_forms();
   $formterms = get_terms_for_forms($temp_year);
-  $formstudents = get_ta_students($temp_term, $temp_year);
+  
+  $studentstable = get_ta_students($temp_term, $temp_year);
 
+  $header = array(
+		  'last' => 'Last Name',
+		  'first' => 'First Name',
+		  'effort' => 'Effort',
+		  'periods' => 'Pay Periods',
+		  'stipend' => 'Stipend'
+		  );
+  
   /*  DEBUG
   $form['temp_markup'] = array(
 			       '#markup' => t('This is some markup to get this pagen started'),
@@ -187,23 +204,36 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#type' => 'actions',
 					 );
 
-  $form['select_ta_ga_students']['choose_students'] = array(
-	'#type' => 'checkboxes',
-	'#options' => drupal_map_assoc($formstudents),
-							    );
+  $form['select_ta_ga_students']['choose_students_table'] = array(
+	'#type' => 'tableselect',
+	'#header' => $header,
+	'#options' => $studentstable,
+								  );  
+
   $form['submit'] = array(
 			  '#type' => 'submit',
 			  '#value' => 'submit',
-			  '#submit' => array('tuition_tool_forms_ta_ga_form_submit'),
+			  //'#submit' => array('tuition_tool_forms_ta_ga_form_submit'),
+			  '#submit' => array('tuition_tool_forms_ta_ga_generated_form'),
 			  );
   
-
   //  dsm($form);
-  
+  //  dsm($form_state);
 
   return system_settings_form($form);
 }
 
-function tuition_tool_forms_ta_ga_form_submit($form, &$form_state){
+//function tuition_tool_forms_ta_ga_form_submit($form, &$form_state){
+function tuition_tool_forms_ta_ga_generated_form($form, &$form_state){
   drupal_set_message("lets see what this looks like",'status');
+
+
+
+  print "<p>Here is some stuff I want to see if it prints</p>";
+
+  dsm($form);
+  
+  
+
 }
+
