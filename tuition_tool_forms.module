@@ -16,8 +16,15 @@ function tuition_tool_forms_menu(){
        'title' => 'Tuition Tool Forms',
        'description' => 'Generate the Tution Tool TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
-       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'page arguments' => array('tuition_tool_forms_ta_ga'),
        'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
+							  );
+  $menu_items['admin/config/tuition_tool_form'] = array(
+	'title' => 'Tuition tool form output',
+	'description' => 'This is where the forms are generated',
+	'page callback' => 'drupal_get_form',
+	'page arguments' => array('tuition_tool_ta_ga_form_output'),
+	'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
 							   );
 							 
   return $menu_items;
@@ -148,7 +155,14 @@ function get_ta_entries($dept, $term){
 */
 
 
+function tuition_tool_forms_ta_ga($form, &$form_state){
+  $new_form = drupal_get_form('tuition_tool_forms_ta_ga_form');
+    return system_settings_form($new_form);
+}
+
+
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
+
 
   // first let the user choose the field, it will be a required field, but it will be defaulted to the variable for the current term.
   //  This will force me to make the first tuition_tool module required. which is good anyway.
@@ -159,6 +173,7 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 
   $temp_year = 'my_year';
   $temp_term = 'my_term';
+  $temp_dept = 'physics';
 
   $formyears = get_years_for_forms();
   $formterms = get_terms_for_forms($temp_year);
@@ -210,30 +225,117 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#options' => $studentstable,
 								  );  
 
-  $form['submit'] = array(
+  $form['build_appointment_list'] = array(
 			  '#type' => 'submit',
-			  '#value' => 'submit',
+			  '#value' => 'Build Form',
 			  //'#submit' => array('tuition_tool_forms_ta_ga_form_submit'),
-			  '#submit' => array('tuition_tool_forms_ta_ga_generated_form'),
+			  '#submit' => array('tuition_tool_forms_ta_ga_submit'),
 			  );
   
-  //  dsm($form);
-  //  dsm($form_state);
+  if(!empty($form_state['values']['choose_students_table'])){
+    //dsm($form_state);
 
-  return system_settings_form($form);
+    //lets try to remove the header stuff from displaying.
+    $form['#attributes']['class'][] = 'ta-ga-appointment-list';
+
+    //TRY ATTACHING A CSS FILE TO THIS FORM TO GIVE IT THE STYLING YOU NEED!
+
+    unset($form['set_ta_ga_actions']);
+    unset($form['select_ta_ga_students']);
+    unset($form['build_appointment_list']);
+
+    $student_list = array();
+    
+    foreach( $form_state['values']['choose_students_table'] as $stud_nid){
+      if($stud_nid > 0){
+	$student_list[] = $stud_nid;
+      }
+    }
+    	$form['generated_appointment_list'] = array(
+						    //'#markup' => '<p style=\'color:red;\'>MARKUP!! Here is the nid: '.$stud_nid.'</p> '
+						    '#markup' => generate_appointment_html($student_list,$temp_term,$temp_dept)
+						    );
+
+  }
+  
+
+  return $form;
+
+  //  return system_settings_form($form);
 }
 
-//function tuition_tool_forms_ta_ga_form_submit($form, &$form_state){
-function tuition_tool_forms_ta_ga_generated_form($form, &$form_state){
-  drupal_set_message("lets see what this looks like",'status');
+function generate_appointment_html($stud_list,$term,$dept){
+  $list_html = '<table><tr>
+                           <th>Employee Name</th>
+                           <th>Lehigh ID</th>
+                           <th>Phone Ext.</th>
+                           <th>Start Date</th>
+                           <th>End Date</th>
+                           <th>Percent Effort</th>
+                           <th>Pay Periods</th>
+                           <th>Periodic Rate</th>
+                           <th>Total Stipend</th>
+               </tr>';
+
+  $entities = entity_load('node',$stud_list);
+
+  $total_stipend = 0;
+  $total_rate = 0;
+
+  //I NEED TO CHECK TO MAKE SURE THE ACCOUNT NUMBER IS THE SAME
+  foreach($entities as $curentry){
+
+    //probably need to reset these so that we don't get old data.
+    $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
+    $id =  $curentry->field_lin['und'][0]['value'];
+    $phone =  $curentry->field_phone['und'][0]['value'];
+    $start =  $curentry->field_aid_date['und'][0]['value'];
+    $end =  $curentry->field_aid_date['und'][0]['value2'];
+    $effort = $curentry->field_effort['und'][0]['value'];
+    $periods = $curentry->field_pay_periods['und'][0]['value'];
+    $stipend = $curentry->field_stipend['und'][0]['value'];
+    $rate = $stipend/$periods;
+    //Totals
+    $total_stipend = $total_stipend + $stipend;
+    $total_rate = $total_rate + $rate;
+    
+    //create the row
+    $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start.'</td><td>'.$end.'</td><td>'.$effort.'</td><td>'.
+      $periods.'</td><td>'.$rate.'</td><td>'.$stipend.'</td></tr>';
+
+    //Add the row to the list
+    $list_html = $list_html.$thisrow;
+      }
+  //Don't forget to style this final row differently
+  $list_html = $list_html.
+    '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td><strong>Totals:</strong></td><td>'.$total_rate.'</td><td>'.$total_stipend
+    .'</td></tr></table>';
+
+    return $list_html;
+}
 
 
 
-  print "<p>Here is some stuff I want to see if it prints</p>";
+function tuition_tool_forms_ta_ga_submit($form, &$form_state){
 
-  dsm($form);
+  //drupal_get_form('tuition_tool_ta_ga_form_output');
+
+  $form_state['rebuild'] = TRUE;
+  //$form_state['redirect'] = 'node/1';
+
+  //Let's try to add an attribute to alter the css
+
+  dsm($form_state);
+
+  //  drupal_set_message('here is your message');
+
+}
+
+function tuition_tool_ta_ga_form_output($form, &$form_state){
+
+  dsm($form_state);
   
+  return $form;
   
-
 }
 
