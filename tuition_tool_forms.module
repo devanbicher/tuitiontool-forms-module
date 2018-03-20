@@ -160,6 +160,11 @@ function tuition_tool_forms_ta_ga($form, &$form_state){
     return system_settings_form($new_form);
 }
 
+function test_select_year($form, &$form_state){
+  drupal_set_message("does this work");
+  $form_state['rebuild'] = TRUE;
+}
+
 
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
 
@@ -187,12 +192,6 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 		  'periods' => 'Pay Periods',
 		  'stipend' => 'Stipend'
 		  );
-  
-  /*  DEBUG
-  $form['temp_markup'] = array(
-			       '#markup' => t('This is some markup to get this pagen started'),
-			       );		       
-  */  
 
   $form['set_ta_ga_actions'] = array(
 	  '#type' => 'actions',
@@ -204,7 +203,8 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#title' => t('Please select the year from which to generate this form'),
 	'#options' => $formyears,
 	'#required' => TRUE,
-	'#default_value' => variable_get('default_year') //THIS IS one reason WHY TUITION TOOL MODULE IS REQUIRED.
+	'#default_value' => variable_get('default_year'), //THIS IS one reason WHY TUITION TOOL MODULE IS REQUIRED.
+	//'#after_build' => array('test_select_year'),
 						      );
   
   // I am going to need to alter this if A different option is selected above. 
@@ -233,13 +233,10 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 			  );
   
   if(!empty($form_state['values']['choose_students_table'])){
-    //dsm($form_state);
 
-    //lets try to remove the header stuff from displaying.
-    $form['#attributes']['class'][] = 'ta-ga-appointment-list';
-
-    //TRY ATTACHING A CSS FILE TO THIS FORM TO GIVE IT THE STYLING YOU NEED!
-
+    //Add the stylesheet to style this table and remove some header stuff.
+    dsm(drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css'));
+    //removes the form stuff to only display the Appointment List
     unset($form['set_ta_ga_actions']);
     unset($form['select_ta_ga_students']);
     unset($form['build_appointment_list']);
@@ -252,7 +249,6 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
       }
     }
     	$form['generated_appointment_list'] = array(
-						    //'#markup' => '<p style=\'color:red;\'>MARKUP!! Here is the nid: '.$stud_nid.'</p> '
 						    '#markup' => generate_appointment_html($student_list,$temp_term,$temp_dept)
 						    );
 
@@ -291,6 +287,8 @@ function generate_appointment_html($stud_list,$term,$dept){
     $phone =  $curentry->field_phone['und'][0]['value'];
     $start =  $curentry->field_aid_date['und'][0]['value'];
     $end =  $curentry->field_aid_date['und'][0]['value2'];
+    $start_date = new DateTime($start);
+    $end_date = new DateTime($end);
     $effort = $curentry->field_effort['und'][0]['value'];
     $periods = $curentry->field_pay_periods['und'][0]['value'];
     $stipend = $curentry->field_stipend['und'][0]['value'];
@@ -300,8 +298,8 @@ function generate_appointment_html($stud_list,$term,$dept){
     $total_rate = $total_rate + $rate;
     
     //create the row
-    $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start.'</td><td>'.$end.'</td><td>'.$effort.'</td><td>'.
-      $periods.'</td><td>'.$rate.'</td><td>'.$stipend.'</td></tr>';
+    $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date->format('m-d-Y').'</td><td>'
+      .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'.$rate.'</td><td>$'.$stipend.'</td></tr>';
 
     //Add the row to the list
     $list_html = $list_html.$thisrow;
@@ -325,9 +323,7 @@ function tuition_tool_forms_ta_ga_submit($form, &$form_state){
 
   //Let's try to add an attribute to alter the css
 
-  dsm($form_state);
-
-  //  drupal_set_message('here is your message');
+  //dsm($form);
 
 }
 
