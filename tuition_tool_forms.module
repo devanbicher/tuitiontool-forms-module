@@ -16,7 +16,7 @@ function tuition_tool_forms_menu(){
        'title' => 'Tuition Tool Forms',
        'description' => 'Generate the Tution Tool TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
-       'page arguments' => array('tuition_tool_forms_ta_ga'),
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
        'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
 							  );
   $menu_items['admin/config/tuition_tool_form'] = array(
@@ -130,6 +130,7 @@ function get_ta_students($temp_term, $temp_year){
 
       'last' => $curentry->field_student_last_name['und'][0]['value'],
       'first' => $curentry->field_student_first_name['und'][0]['value'],
+      'account' => $curentry->field_account_number['und'][0]['value'],
       'effort' => $curentry->field_effort['und'][0]['value'],
       'periods' => $curentry->field_pay_periods['und'][0]['value'],
       'stipend' =>$curentry->field_stipend['und'][0]['value']
@@ -152,13 +153,13 @@ function get_ta_entries($dept, $term){
     // return an array that has names dates and stipend.
 
 }
-*/
 
 
 function tuition_tool_forms_ta_ga($form, &$form_state){
   $new_form = drupal_get_form('tuition_tool_forms_ta_ga_form');
     return system_settings_form($new_form);
 }
+*/
 
 function test_select_year($form, &$form_state){
   drupal_set_message("does this work");
@@ -188,6 +189,7 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
   $header = array(
 		  'last' => 'Last Name',
 		  'first' => 'First Name',
+		  'account' => 'Account',
 		  'effort' => 'Effort',
 		  'periods' => 'Pay Periods',
 		  'stipend' => 'Stipend'
@@ -232,16 +234,19 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 			  '#submit' => array('tuition_tool_forms_ta_ga_submit'),
 			  );
   
-  if(!empty($form_state['values']['choose_students_table'])){
-
+  if(!empty($form_state['values']['choose_students_table'])){    
+    
+    
     //Add the stylesheet to style this table and remove some header stuff.
-    dsm(drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css'));
+    drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
     //removes the form stuff to only display the Appointment List
     unset($form['set_ta_ga_actions']);
     unset($form['select_ta_ga_students']);
     unset($form['build_appointment_list']);
 
     $student_list = array();
+
+    $term_id = $form_state['values']['set_form_term'];
     
     foreach( $form_state['values']['choose_students_table'] as $stud_nid){
       if($stud_nid > 0){
@@ -249,37 +254,45 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
       }
     }
     	$form['generated_appointment_list'] = array(
-						    '#markup' => generate_appointment_html($student_list,$temp_term,$temp_dept)
+						    '#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
 						    );
 
   }
   
 
-  return $form;
+  //  return $form;
 
-  //  return system_settings_form($form);
+  return system_settings_form($form);
 }
 
-function generate_appointment_html($stud_list,$term,$dept){
-  $list_html = '<table><tr>
-                           <th>Employee Name</th>
-                           <th>Lehigh ID</th>
-                           <th>Phone Ext.</th>
-                           <th>Start Date</th>
-                           <th>End Date</th>
-                           <th>Percent Effort</th>
-                           <th>Pay Periods</th>
-                           <th>Periodic Rate</th>
-                           <th>Total Stipend</th>
-               </tr>';
+function generate_appointment_html($stud_list,$term_id,$dept){
+  $list_html = '';
+
+  $term_load = entity_load('taxonomy_term',array($term_id));
+  
+  $term_ent_vals = array_values($term_load);
+  $term_ent = $term_ent_vals[0];
+  
+  $term_code = $term_ent->field_banner_term_code['und'][0]['value'];
 
   $entities = entity_load('node',$stud_list);
 
   $total_stipend = 0;
   $total_rate = 0;
-
+  $counter = 0;
+  $table_html = '';
+  
   //I NEED TO CHECK TO MAKE SURE THE ACCOUNT NUMBER IS THE SAME
   foreach($entities as $curentry){
+    if($counter == 0){
+      $account = $curentry->field_account_number['und'][0]['value']; //set the account number to make sure they are all the same
+    }
+    else{
+      $cur_account = $curentry->field_account_number['und'][0]['value'];
+      if($cur_account != $account){
+	return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number</h1>";
+      }
+    }
 
     //probably need to reset these so that we don't get old data.
     $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
@@ -302,12 +315,43 @@ function generate_appointment_html($stud_list,$term,$dept){
       .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'.$rate.'</td><td>$'.$stipend.'</td></tr>';
 
     //Add the row to the list
-    $list_html = $list_html.$thisrow;
-      }
+    $table_html = $table_html.$thisrow;
+    $counter += 1;
+  }
+
+  $list_top_html = '<div class="appointment-list-page-wrapper">
+                    <div class="appointment-list-inner-wrapper">
+                    <div class="appointment-list-header">
+                    <h1 class="appointment-list-head-text">TA/GA Appointment List</h1>
+                    <div class="header-line-1 clearfix"><div class="term-space"><p>Term: <span class="term-id">'.$term_code.'</span></p></div>
+                    <div class="account-space"><p>'.$account.'</p></div></div>
+                    <div class="header-line-2"><div class="department-space"><p>Department:  <span class="department-name">'.$dept.'</span></p></div>
+                    <div class="account-name"><p>Account</p></div></div></div>';
+
+  $list_html = $list_html.$list_top_html;
+
+  $table_header = '<table><tr>
+                           <th>Employee Name</th>
+                           <th>Lehigh ID</th>
+                           <th>Phone Ext.</th>
+                           <th>Start Date</th>
+                           <th>End Date</th>
+                           <th>Percent Effort</th>
+                           <th>Pay Periods</th>
+                           <th>Periodic Rate</th>
+                           <th>Total Stipend</th>
+               </tr>';
+  
+  $list_html = $list_html.$table_header;
+  $list_html = $list_html.$table_html;
+
   //Don't forget to style this final row differently
-  $list_html = $list_html.
-    '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td><strong>Totals:</strong></td><td>'.$total_rate.'</td><td>'.$total_stipend
-    .'</td></tr></table>';
+  $table_footer = '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td><strong>Totals:</strong></td><td>'.$total_rate.'</td><td>'.$total_stipend.'</td></tr></table>';
+
+  $list_html = $list_html.$table_footer;
+
+  $list_html = $list_html.'</div></div>';
+
 
     return $list_html;
 }
@@ -320,10 +364,6 @@ function tuition_tool_forms_ta_ga_submit($form, &$form_state){
 
   $form_state['rebuild'] = TRUE;
   //$form_state['redirect'] = 'node/1';
-
-  //Let's try to add an attribute to alter the css
-
-  //dsm($form);
 
 }
 

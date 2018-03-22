@@ -1,0 +1,57 @@
+
+.page-admin-content-tuition-tool-forms #branding{
+/*.page-admin-content-tuition-tool-forms .messages{ add this back in when you don't want to see the messages*/
+    display:none;
+}
+
+.appointment-list-page-wrapper {
+    width: 8.5in;
+    margin: auto;
+    border: solid black 1px;
+}
+
+.appointment-list-page-wrapper p,
+.appointment-list-page-wrapper table{
+    font-size: 9px;
+}
+
+.appointment-list-page-wrapper table td{
+    padding: 0px;
+    border: solid black 1px;
+}
+
+.appointment-list-inner-wrapper {
+    margin: .5625in .8125in;
+}
+h1.appointment-list-head-text{
+    text-align:center;
+}
+
+.appointment-list-header p{
+    margin: 0px;
+}
+    
+
+.appointment-list-page-wrapper th{
+    background-color:black;
+    color:white;
+}
+
+.term-space,
+.account-space,
+.department-space,
+.account-name{
+    display:inline-block;
+}
+
+.term-space,
+.department-space{
+    float:left;
+}
+.account-space,
+.account-name{
+    float:right;
+}
+
+
+    
