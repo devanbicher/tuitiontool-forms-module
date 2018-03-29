@@ -265,6 +265,7 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 }
 
 function generate_appointment_html($stud_list,$term_id,$dept){
+  $accntend = 61510;
   $list_html = '';
 
   $term_load = entity_load('taxonomy_term',array($term_id));
@@ -323,26 +324,11 @@ function generate_appointment_html($stud_list,$term_id,$dept){
                     <div class="appointment-list-header">
                     <h1 class="appointment-list-head-text">TA/GA Appointment List</h1>
                     <div class="header-line-1 clearfix"><div class="term-space"><p>Term: <span class="term-id">'.$term_code.'</span></p></div>
-                    <div class="account-space"><p>'.$account.'</p></div></div>
-                    <div class="header-line-2"><div class="department-space"><p>Department:  <span class="department-name">'.$dept.'</span></p></div>
+                    <div class="account-space"><p>'.$account.'-'.$accntend.'</p></div></div>
+                    <div class="header-line-2 clearfix"><div class="department-space"><p>Department:  <span class="department-name">'.$dept.'</span></p></div>
                     <div class="account-name"><p>Account</p></div></div></div>';
 
   $list_html = $list_html.$list_top_html;
-
-  /*
-
-<td>Employee Name</td>
-                           <td>Lehigh ID</td>
-                           <td>Phone Ext.</td>
-                           <td>Start Date</td>
-                           <td>End Date</td>
-                           <td>Percent Effort</td>
-                           <td>Pay Periods</td>
-                           <td>Periodic Rate</td>
-                           <td>Total Stipend</td>
-
-  */
-
 
   $table_header = '<table class="appointment-table"><tr class="table-header">
                            <th>Employee Name</th>
@@ -360,22 +346,23 @@ function generate_appointment_html($stud_list,$term_id,$dept){
   $list_html = $list_html.$table_html;
 
   //Don't forget to style this final row differently
-  $table_footer = '<tr class="last-row"><td></td><td></td><td></td><td></td><td></td><td></td><td><strong>Totals:</strong></td><td>'.$total_rate.'</td><td>'.$total_stipend.'</td></tr></table>';
+  $table_footer = '<tr class="last-row"><td></td><td></td><td></td><td></td><td></td><td></td>
+                   <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals">'.$total_rate.'</td><td class="final-totals">'.$total_stipend.'</td></tr></table>';
 
   $list_html = $list_html.$table_footer;
 
   $below_table = '<div class="sub-table">
                   <div class="sub-table-1 clearfix"><p>*Please use full legal name</p></div>
                   <div class="sub-table-2 clearfix"><p>For internal use only</p></div>
-                  <div class="sub-table-3 clearfix"><p>TKL</p><div class="internal-use-line"></div>
+                  <div class="sub-table-3 clearfix"><p id="tkl">TKL</p><div class="internal-use-line"></div>
                                                     <div class="accnt-exec-line"><p>Account Executive</p></div>
                                                     <div class="date-line"><p>Date</p></div></div>
-                  <div class="sub-table-4 clearfix"><p>DDU</p><div class="internal-use-line"></div></div>
-                  <div class="sub-table-5 clearfix"><p>Position #</p><div class="internal-use-line"></div></div>
+                  <div class="sub-table-4 clearfix"><p id="ddu">DDU</p><div class="internal-use-line"></div></div>
+                  <div class="sub-table-5 clearfix"><p id="position-num">Position #</p><div class="internal-use-line"></div></div>
                   <div class="sub-table-6 clearfix"><div class="no-status-change"><p>This form may not be used to report</p>
                                                                                   <p>change in existing status</p></div>
-                                                    <div class="initials-table">
-                                                    <table><tr><th class="initials-intials">Initials</th>
+                                                    <div class="initials-table-div">
+                                                    <table class="initials-table"><tr><th class="initials-initials">Initials</th>
                                                                <th class="initials-date">Date</th>
                                                                <th class="initials-rout">Routing</th></tr>
                                                     <tr><td></td><td></td><td>College Dean</td></tr>

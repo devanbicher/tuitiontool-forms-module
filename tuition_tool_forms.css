@@ -5,6 +5,10 @@ div#edit-actions,
     display:none;
 }
 
+body,.appointment-list-page-wrapper{
+    font: normal 7pt "Arial", sans-serif;
+}
+
 .appointment-list-page-wrapper {
     width: 8.5in;
     margin: auto;
@@ -13,11 +17,11 @@ div#edit-actions,
 
 .appointment-list-page-wrapper p,
 .appointment-list-page-wrapper table{
-    font-size: 9px;
+    font-size: 7pt;
 }
 
 .appointment-list-page-wrapper table td{
-    padding: 0px;
+    padding: 3pt;
     border: solid black 1px;
 }
 
@@ -26,6 +30,19 @@ div#edit-actions,
 }
 h1.appointment-list-head-text{
     text-align:center;
+    font-size: 12pt;
+}
+table,tr,td,th{
+    font: normal 7pt "Arial", sans-serif;
+}
+
+table.appointment-table tr.last-row,
+table.appointment-table tr.last-row td{
+    border:none;
+}
+
+table.appointment-table tr.last-row td.final-totals{
+    border: solid 1px black;
 }
 
 .appointment-list-header p{
@@ -35,11 +52,15 @@ h1.appointment-list-head-text{
 table.appointment-table tr.table-header td{
     background-color: #000000;
     color: #FFFFFF;
+    font-weight: bold;
+     padding: 4pt;
 }   
 
 .appointment-list-page-wrapper th{
+    padding: 4pt;
     background-color:black;
     color:white;
+    font-weight: bold;
 }
 
 .term-space,
@@ -56,6 +77,113 @@ table.appointment-table tr.table-header td{
 .account-space,
 .account-name{
     float:right;
+}
+
+.account-space{
+    text-align:center;
+    display:block;
+    border: solid 1px black;
+    width: 100pt;
+}
+
+.account-name{
+    width:100pt;
+    text-align:center;
+}
+
+span.term-id{
+    border-bottom: solid 1px black;
+    width: 1.44in;
+    display: inline-block;
+}
+
+span.department-name{
+    border-bottom: solid 1px black;
+    width: 2in;
+    display: inline-block;
+}
+.header-line-1 p,
+.header-line-2 p{
+    padding:2pt;
+}
+.header-line-2{
+    margin-bottom:10px;
+}
+
+.internal-use-line{
+    display:inline-block;
+    width: 120pt;
+    border-bottom: solid 1px black;
+    margin-left: 7pt;
+}
+.sub-table p{
+    display: inline-block;
+}
+
+.accnt-exec-line,
+.date-line{
+    display:inline-block;
+    border-top: solid 1px black;
+    text-align:center;
+}
+
+.accnt-exec-line{
+    margin-left:38pt;
+    width: 124pt;
+}
+.date-line{
+    margin-left:8pt;
+    width:82pt;
+}
+
+.sub-table p#ddu,
+.sub-table p#tkl{
+    margin-left:34pt;
+}
+.sub-table p#position-num{
+    margin-left: 20pt;
+}
+
+.no-status-change p,
+.sub-table-last p{
+    font-weight: bold;
+    padding-left:4pt;
+}
+
+.no-status-change,
+.initials-table-div{
+    display:inline-block;
+}
+
+.no-status-change{
+    border: solid 1px black;
+    width: 156pt;
+    margin-right:52pt;
+    margin-top:20pt;
+    vertical-align:top;
+}
+
+table.initials-table{
+    width:236pt;
+    text-align:center;
+}
+table.initials-table th{
+    text-align:center;
+}
+
+table.initials-table td{
+    font-weight:bold;
+}
+
+table.initials-table th.initials-initials{
+    width:52pt;
+}
+
+table.initials-table th.initials-date{
+    width:104pt;
+}
+table.initials-table th.initials-rout{
+    width:78pt;
 }
 
 }
@@ -84,8 +212,16 @@ html {
 body{
     margin: .5625in .8125in;
     -webkit-print-color-adjust:exact;
+    font: normal 7pt "Arial", sans-serif;
 }
 
+body,.appointment-list-page-wrapper{
+    font: normal 7pt "Arial", sans-serif;
+}
+
+table,tr,td,th{
+    font: normal 7pt "Arial", sans-serif;
+}
 
 /*
 .appointment-list-page-wrapper {
@@ -97,7 +233,7 @@ body{
 
 .appointment-list-page-wrapper p,
 .appointment-list-page-wrapper table{
-    font-size: 9px;
+    font-size: 7pt;
 }
 
 table.appointment-table{
@@ -106,8 +242,17 @@ table.appointment-table{
     
 
 .appointment-list-page-wrapper table td{
-    padding: 0px;
+    padding: 3pt;
     border: solid black 1px;
+}
+
+table.appointment-table tr.last-row,
+table.appointment-table tr.last-row td{
+    border:none;
+}
+
+table.appointment-table tr.last-row td.final-totals{
+    border: solid 1px black;
 }
 
 /*.appointment-list-inner-wrapper {
@@ -116,6 +261,7 @@ table.appointment-table{
 
 h1.appointment-list-head-text{
     text-align:center;
+    font-size: 12pt;
 }
 
 .appointment-list-header p{
@@ -123,13 +269,17 @@ h1.appointment-list-head-text{
 }
     
 table.appointment-table tr.table-header td{
+    padding: 4pt;
     background-color: #000001;
     color: #FFFFFE;
+    font-weight: bold;
 }
 
 .appointment-list-page-wrapper th{
+    padding: 4pt;
     background-color:black;
     color:white;
+    font-weight: bold;
 }
 
 .term-space,
@@ -147,5 +297,117 @@ table.appointment-table tr.table-header td{
 .account-name{
     float:right;
 } 
+.account-name{
+    width:100pt;
+    text-align:center;
+}
+
+.account-space{
+    text-align:center;
+    display:block;
+    border: solid 1px black;
+    width: 100pt;
+}
+.account-space p{
+    padding: 0px 3pt;
+}
+span.term-id{
+    border-bottom: solid 1px black;
+    width: 1.44in;
+    display: inline-block;
+}
+
+span.department-name{
+    border-bottom: solid 1px black;
+    width: 2in;
+    display: inline-block;
+}
+.header-line-1 p,
+.header-line-2 p{
+    padding:2pt;
+}
+.header-line-2{
+    margin-bottom:10px;
+}
+
+.internal-use-line{
+    display:inline-block;
+    width: 120pt;
+    border-bottom: solid 1px black;
+    margin-left:6pt;
+}
+
+.sub-table p{
+    display: inline-block;
+}
+
+.accnt-exec-line,
+.date-line{
+    display:inline-block;
+    border-top: solid 1px black;
+    text-align:center;
+}
+
+.accnt-exec-line{
+    margin-left:38pt;
+    width: 124pt;
+}
+.date-line{
+    margin-left:8pt;
+    width:82pt;
+}
+
+.sub-table p#ddu{
+    margin-left:34pt;
+}
+.sub-table p#tkl{
+    margin-left: 35pt;
+}
+.sub-table p#position-num{
+    margin-left: 20pt;
+}
+
+.no-status-change p,
+.sub-table-last p{
+    font-weight: bold;
+    padding-left:4pt;
+}
+
+.no-status-change,
+.initials-table-div{
+    display:inline-block;
+}
+
+.no-status-change{
+    border: solid 1px black;
+    width: 156pt;
+    margin-right:52pt;
+    margin-top:20pt;
+    vertical-align:top;
+}
+
+table.initials-table{
+    width:236pt;
+    text-align:center;
+}
+
+table.initials-table th{
+    text-align:center;
+}
+
+table.initials-table td{
+    font-weight:bold;
+}
+
+table.initials-table th.initials-initials{
+    width:52pt;
+}
+
+table.initials-table th.initials-date{
+    width:104pt;
+}
+table.initials-table th.initials-rout{
+    width:78pt;
+}
 
 }
