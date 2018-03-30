@@ -62,18 +62,16 @@ function get_years_for_forms(){
 function get_terms_for_forms($year){
   //need to use a query function to get terms for the current year.
 
-  //$terms = array('201710','201720','201810','201820'); DEBUG
-
   $terms = array();
-  
+
   $ent_query = new EntityFieldQuery;
 
   $ent_query->entityCondition('entity_type','taxonomy_term')
-    ->entityCondition('bundle','termcodes');
-  // ->fieldCondition('field_term_year','tid',$year,'=');
+    ->entityCondition('bundle','termcodes')
+    ->fieldCondition('field_academic_year','tid',$year,'=');
   
   $match_ents = $ent_query->execute();
-  
+
   foreach($match_ents['taxonomy_term'] as $myent){
     $match_ids[] = $myent->tid;
   }
@@ -87,10 +85,12 @@ function get_terms_for_forms($year){
   return $terms;
 
 }
-
-function get_ta_students($temp_term, $temp_year){
+/*
+function get_ta_students($temp_term, $temp_year,$temp_dept){
   $year = variable_get('default_year');
   $term = variable_get('default_term'); //place holder until I can get choosing different terms worked out
+*/
+function get_ta_students($term, $year,$temp_dept){
   $entry = 'physics_aid_entry'; //place holder until I can work out a better way to figure out how to properly get the right bundle.
   $aid = 'physics_aid_type';
   $students = array();
@@ -143,41 +143,22 @@ function get_ta_students($temp_term, $temp_year){
   return $students;
 }
 
-
-
-
-
-
-/*
-function get_ta_entries($dept, $term){
-  //for a give department and term find all of the aid type that are TA,
-    // return an array that has names dates and stipend.
-
-}
-
-
-function tuition_tool_forms_ta_ga($form, &$form_state){
-  $new_form = drupal_get_form('tuition_tool_forms_ta_ga_form');
-    return system_settings_form($new_form);
-}
-*/
-
 function test_select_year($form, &$form_state){
-  drupal_set_message("does this work");
   $form_state['rebuild'] = TRUE;
 }
 
-
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
 
-  $temp_year = 'my_year';
+  $default_year = variable_get('default_year');
   $temp_term = 'my_term';
   $temp_dept = 'physics';
 
-  $formyears = get_years_for_forms();
-  $formterms = get_terms_for_forms($temp_year); //put this in an if statement and get the value from $form_state and if there is none use the variable_get
+  $formyears = get_years_for_forms(); //This will stay, some of the other variables will change.
   
-  $studentstable = get_ta_students($temp_term, $temp_year);
+  //$studentstable = get_ta_students($temp_term, $default_year,$temp_dept);
+
+  $blank_header = array('meh'=>'PLEASE SELECT A TERM TO GENERATE A LIST OF STUDENTS FROM WHICH YOU CAN GENERATE YOUR FORM');
+  $blank_table = array();
 
   $header = array(
 		  'last' => 'Last Name',
@@ -190,7 +171,7 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 
   $form['set_ta_ga_actions'] = array(
 	  '#type' => 'actions',
-	  '#weight' => 0,
+	  '#weight' => -10,
 					  );
   
   $form['set_ta_ga_actions']['set_form_year'] = array(
@@ -201,72 +182,103 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#default_value' => variable_get('default_year'), //THIS IS one reason WHY TUITION TOOL MODULE IS REQUIRED.
 	'#ajax' => array(
 			 'callback' => 'alter_term_choices',
-			 'wrapper' => 'term-choices',
+			 'wrapper' => 'term-choices-list',
 			 'method' => 'replace',
 			 'effect' => 'fade'),	
 						      );
   
-
-  // I am going to need to alter this if A different option is selected above. 
-  $form['set_ta_ga_actions']['set_form_term'] = array(
-	'#type' => 'select',
-	'#title' => t('Please select Term from which to generate forms'),
-	'#prefix' => '<div class="term-choices">',
-	'#suffix' => '</div>',
-	'#options' => $formterms,
-      	'#default_value' => variable_get('default_term') //THIS IS WHY TUITION TOOL MODULE IS REQUIRED.
-							);
-
-  //Put in an ajax section for the above thing as well. 
-
-
-  $form['select_ta_ga_students'] = array(
-	'#type' => 'actions',
+  $form['term_select_field_set'] = array(
+	 '#type' => 'fieldset',
+	 '#prefix' => '<div id="term-choices-list">',
+	 '#suffix' => '</div>',
+	 '#weight' => -9,
 					 );
 
-  $form['select_ta_ga_students']['choose_students_table'] = array(
+  $form['term_select_field_set']['select_term'] = array(
+	'#type' => 'select',
+	'#weight' => -5,
+	'#title' => t('Please select Term from which to generate forms'),
+	'#required' => TRUE,
+	'#options' => !empty($form_state['values']['set_form_year']) ? get_terms_for_forms($form_state['values']['set_form_year']) : get_terms_for_forms($default_year),
+	'#description'=> t('This fieldset can also contain the aid type list if that should be here too'),
+	'#ajax' => array(
+			 'callback' => 'create_student_choices',
+			 'wrapper' => 'select-students-table',
+			 'method' => 'replace',
+			 'effect' => 'fade'),
+							);
+
+  $form['term_select_field_set']['select_ta_ga_students'] = array(
+	'#type' => 'actions',
+	'#weight' => 0,
+	'#prefix' => '<div id="select-students-table">',
+	'#suffix' => '</div>',
+					 );
+
+  $form['term_select_field_set']['select_ta_ga_students']['choose_students_table'] = array(
 	'#type' => 'tableselect',
-	'#header' => $header,
-	'#options' => $studentstable,
+	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
+	//'#options' => $studentstable,
+	'#options' => !empty($form_state['values']['select_term']) ? 
+	              get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$temp_dept) : $blank_table,
+	'#weight' => 10,
 								  );  
+  $form['dev_notes'] = array(
+			     '#type' => 'markup',
+			     '#markup' => 'Do not forget to alter the css of the actual tool to remove the save config button.',
+			     '#weight' => -1,
+			     );
 
   $form['build_appointment_list'] = array(
 			  '#type' => 'submit',
 			  '#value' => 'Build Form',
-			  //'#submit' => array('tuition_tool_forms_ta_ga_form_submit'),
 			  '#submit' => array('tuition_tool_forms_ta_ga_submit'),
+			  '#weight' => -5,
 			  );
-  
-  if(!empty($form_state['values']['choose_students_table'])){    
-    
-    //Add the stylesheet to style this table and remove some header stuff.
-    drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
-    //removes the form stuff to only display the Appointment List
-    unset($form['set_ta_ga_actions']);
-    unset($form['select_ta_ga_students']);
-    unset($form['build_appointment_list']);
 
-    $student_list = array();
-
-    $term_id = $form_state['values']['set_form_term'];
-    
-    foreach( $form_state['values']['choose_students_table'] as $stud_nid){
-      if($stud_nid > 0){
-	$student_list[] = $stud_nid;
+  //This space below here generates the form. 
+  if(!empty($form_state['values']['choose_students_table'])){
+    $students_selected = FALSE;//This variable and following for loop makes sure this doesn't activate unless students are selected
+    foreach($form_state['values']['choose_students_table'] as $value){
+      if($value > 0){
+	$students_selected = TRUE;
+	break;
       }
     }
-    	$form['generated_appointment_list'] = array(
-						    '#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
-						    );
-
+    if($students_selected){    
+      //Add the stylesheet to style this table and remove some header stuff.
+      drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
+      //removes the form stuff to only display the Appointment List
+      unset($form['set_ta_ga_actions']);
+      unset($form['term_select_field_set']);
+      //unset($form['select_ta_ga_students']);
+      unset($form['build_appointment_list']);
+      unset($form['dev_notes']);
+      
+      $student_list = array();
+      
+      $term_id = $form_state['values']['select_term'];
+      
+      foreach( $form_state['values']['choose_students_table'] as $stud_nid){
+	if($stud_nid > 0){
+	  $student_list[] = $stud_nid;
+	}
+      }
+      $form['generated_appointment_list'] = array(
+						  '#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
+						  );
+    }
   }
-
+  
   return system_settings_form($form);
 }
 
-function alter_term_choices($form,$form_state){
+function create_student_choices($form, $form_state){
+  return $form['term_select_field_set']['select_ta_ga_students'];
+}
 
-  return 'some stuff';
+function alter_term_choices($form,$form_state){
+  return $form['term_select_field_set'];
 }
 
 function generate_appointment_html($stud_list,$term_id,$dept){
