@@ -1,11 +1,5 @@
 <?php
 
-  /* add a menu item */
-  /* the menu item goes to a form, displaying all entries for a selected term (for that content type) */
-  /***  try to display all entry types, the viewing by coordinators should be restricted to what they can see anyway */
-
-  /* make a menu item to display the form generating menu item */
-
   /* MAKE SURE NONE OF MY FUNCTIONS CONFLICT WITH MY OTHER MODULE. */
 
 
@@ -14,27 +8,104 @@ function tuition_tool_forms_menu(){
 
   $menu_items['admin/content/tuition_tool_forms'] = array(
        'title' => 'Tuition Tool Forms',
-       'description' => 'Generate the Tution Tool TA/GA Appointment Form',
+       'description' => 'Landing Page for the Forms',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_landing'),
+       'access arguments' => array('access default landing'),
+							  );
+
+  $menu_items['admin/content/tuition_tool_forms/american_forms'] = array(
+       'title' => 'American Studies Forms',
+       'description' => 'Generate the American Studies TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
        'page arguments' => array('tuition_tool_forms_ta_ga_form'),
-       'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
+       'access arguments' => array('access american defaults'),
 							  );
-  $menu_items['admin/config/tuition_tool_form'] = array(
-	'title' => 'Tuition tool form output',
-	'description' => 'This is where the forms are generated',
-	'page callback' => 'drupal_get_form',
-	'page arguments' => array('tuition_tool_ta_ga_form_output'),
-	'access arguments' => array('access administration pages'), //this will need to change to be specific for each department.
-							   );
-							 
+  $menu_items['admin/content/tuition_tool_forms/biology_forms'] = array(
+       'title' => 'Biology Forms',
+       'description' => 'Generate the Biology TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access bio defaults'),
+							  );
+    $menu_items['admin/content/tuition_tool_forms/chemistry_forms'] = array(
+       'title' => 'Chemistry Forms',
+       'description' => 'Generate the Chemistry TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access chem defaults'),
+							  );
+    //DO I NEED A FORM FOR THE 'COLLEGE' AID TYPE?
+    $menu_items['admin/content/tuition_tool_forms/ees_forms'] = array(
+       'title' => 'EES Forms',
+       'description' => 'Generate the EES TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access ees defaults'),
+							  );
+  $menu_items['admin/content/tuition_tool_forms/epd_forms'] = array(
+       'title' => 'EPD Forms',
+       'description' => 'Generate the EPD TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access epd defaults'),
+							  );
+    $menu_items['admin/content/tuition_tool_forms/english_forms'] = array(
+       'title' => 'English Forms',
+       'description' => 'Generate the English TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access english defaults'),
+							  );
+  $menu_items['admin/content/tuition_tool_forms/history_forms'] = array(
+       'title' => 'History Forms',
+       'description' => 'Generate the History TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access history defaults'),
+							  );
+  $menu_items['admin/content/tuition_tool_forms/math_forms'] = array(
+       'title' => 'Math Forms',
+       'description' => 'Generate the Math TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access math defaults'),
+							  );
+  //DO I NEED THE MISCELLANEOUS AID TYPE?
+    $menu_items['admin/content/tuition_tool_forms/physics_forms'] = array(
+       'title' => 'Physics Forms',
+       'description' => 'Generate the Physics TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access physics defaults'),
+							  );
+    $menu_items['admin/content/tuition_tool_forms/polisci_forms'] = array(
+       'title' => 'Political Science Forms',
+       'description' => 'Generate the Political Science TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access polisci defaults'),
+							  );
+  $menu_items['admin/content/tuition_tool_forms/psychology_forms'] = array(
+       'title' => 'Psychology Forms',
+       'description' => 'Generate the Psychology TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access psych defaults'),
+							  );
+  $menu_items['admin/content/tuition_tool_forms/socanthro_forms'] = array(
+       'title' => 'SocAnthro Forms',
+       'description' => 'Generate the Sociology/Anthropology TA/GA Appointment Form',
+       'page callback' => 'drupal_get_form',
+       'page arguments' => array('tuition_tool_forms_ta_ga_form'),
+       'access arguments' => array('access socanth defaults'),
+							  );
   return $menu_items;
   }
 
 
 function get_years_for_forms(){
   //This function just generates all of the available academic years
-
-  //$years = array('2017','2018'); DEBUG
   $years = array();
   
   $ent_query = new EntityFieldQuery();
@@ -85,14 +156,73 @@ function get_terms_for_forms($year){
   return $terms;
 
 }
-/*
-function get_ta_students($temp_term, $temp_year,$temp_dept){
-  $year = variable_get('default_year');
-  $term = variable_get('default_term'); //place holder until I can get choosing different terms worked out
-*/
-function get_ta_students($term, $year,$temp_dept){
-  $entry = 'physics_aid_entry'; //place holder until I can work out a better way to figure out how to properly get the right bundle.
-  $aid = 'physics_aid_type';
+
+function get_dept_ents_from_url($form_url){
+  //only used in get_ta_students
+
+  $dept_forms_array = explode('/',$form_url);
+  $dept = explode('_forms',$dept_forms_array[4]);
+
+  switch ($dept[0]){
+  case 'american':
+    return array('american_aid_entry','american_aid_type');
+    break;
+  case 'biology':
+    return array('bio_aid_entry','bio_aid_type');
+    break;
+  case 'chemistry':
+    return array('chem_aid_entry','chem_aid_type');
+    break;
+  case 'ees':
+    return array('ees_aid_entry','ees_aid_type');
+    break;
+  case 'english':
+    return array('english_aid_entry','english_aid_type');
+    break;
+  case 'epd':
+    return array('epd_aid_entry','epd_aid_type');
+    break;
+  case 'history':
+    return array('history_aid_entry','history_aid_type');
+    break;
+  case 'math':
+    return array('math_aid_entry','math_aid_type');
+    break;
+  case 'physics':
+    return array('physics_aid_entry','physics_aid_type');
+    break;
+  case 'polisci':
+    return array('polisci_aid_entry','polisci_aid_type');
+    break;
+  case 'psychology':
+    return array('psych_aid_entry','psych_aid_type');
+    break;
+  case 'socanthro':
+    return array('socanth_aid_entry','socanth_aid_type');
+    break;
+  default:
+    return array('misc_aid_entry','misc_aid_type');
+  
+  }
+
+}
+
+function get_dept_title_from_url($form_url){
+ 
+
+
+ return $form_url;
+}
+
+function get_ta_students($term, $year,$form_url){
+  $dept_ents = get_dept_ents_from_url($form_url);
+
+  $entry=$dept_ents[0];
+  $aid=$dept_ents[1];
+
+  //$entry = 'physics_aid_entry'; DEBUG
+  //$aid = 'physics_aid_type'; DEBUG
+
   $students = array();
 
   //First get the tid of the aid type
@@ -138,13 +268,19 @@ function get_ta_students($term, $year,$temp_dept){
 				      );
   }
 
-  //$students = array('bob','jill');
 
   return $students;
 }
 
 function test_select_year($form, &$form_state){
   $form_state['rebuild'] = TRUE;
+}
+
+function tuition_tool_forms_landing($form, &$form_state){
+  $form['landing_markup'] = array(
+				  '#markup'=>'<h1>This is simply a landing page for the other form generating pages to branch out from.  This page is purposefully blank</h1>');
+
+  return system_settings_form($form);
 }
 
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
@@ -154,8 +290,6 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
   $temp_dept = 'physics';
 
   $formyears = get_years_for_forms(); //This will stay, some of the other variables will change.
-  
-  //$studentstable = get_ta_students($temp_term, $default_year,$temp_dept);
 
   $blank_header = array('meh'=>'PLEASE SELECT A TERM TO GENERATE A LIST OF STUDENTS FROM WHICH YOU CAN GENERATE YOUR FORM');
   $blank_table = array();
@@ -218,9 +352,9 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
   $form['term_select_field_set']['select_ta_ga_students']['choose_students_table'] = array(
 	'#type' => 'tableselect',
 	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
-	//'#options' => $studentstable,
 	'#options' => !empty($form_state['values']['select_term']) ? 
-	              get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$temp_dept) : $blank_table,
+	get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$form_state['complete form']['#action']) : $blank_table,
+	//get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$temp_dept) : $blank_table,
 	'#weight' => 10,
 								  );  
   $form['dev_notes'] = array(
@@ -246,6 +380,7 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
       }
     }
     if($students_selected){    
+
       //Add the stylesheet to style this table and remove some header stuff.
       drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
       //removes the form stuff to only display the Appointment List
@@ -265,7 +400,8 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	}
       }
       $form['generated_appointment_list'] = array(
-						  '#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
+						  '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'])
+						  //'#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
 						  );
     }
   }
@@ -279,6 +415,52 @@ function create_student_choices($form, $form_state){
 
 function alter_term_choices($form,$form_state){
   return $form['term_select_field_set'];
+}
+
+function get_position_num($account){
+
+  switch ($account){
+  case '211105': 
+    $position = 'GT9960'; //Bio
+    break;
+  case '211310':
+    $position = 'GT9950'; //Chem
+    break;
+  case '211125':
+    $position = 'GT9940'; //EES
+    break;
+  case '211115':
+    $position = 'GT9930'; //English
+    //There are 2 different numbers for English depending on the TA type.  but this is affected by how this form generating process works, i.e. if they can choose any aid type
+    break;
+  case '211135':
+    $position = 'GT9910'; //History
+    break;
+  case '211145':
+    $position = 'GT9900'; //Math
+    //Like English this changed depending on the actual aid type.
+    break;
+  case '211340':
+    $position = 'GT9880';//Physics
+    break;
+  case '211130':
+    $position = 'GT9870';//PoliSci
+    break;
+  case '211165':
+    $position = 'GT9850';//Psych
+    //Like Math and English this changes depending on the aid typ
+    break;
+  case '211175':
+    $position = 'GT9840'; //Socanthro
+    break;
+  case '211189':
+    $position = 'GT9820'; //EI (EPD?)
+    break;
+  default:
+    $position = '';
+  }
+
+      return $position;
 }
 
 function generate_appointment_html($stud_list,$term_id,$dept){
@@ -312,6 +494,7 @@ function generate_appointment_html($stud_list,$term_id,$dept){
     }
 
     //probably need to reset these so that we don't get old data.
+    //also don't forget to check to make sure some of these fields are filled in before getting the value
     $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
     $id =  $curentry->field_lin['und'][0]['value'];
     $phone =  $curentry->field_phone['und'][0]['value'];
@@ -322,11 +505,12 @@ function generate_appointment_html($stud_list,$term_id,$dept){
     $effort = $curentry->field_effort['und'][0]['value'];
     $periods = $curentry->field_pay_periods['und'][0]['value'];
     $stipend = $curentry->field_stipend['und'][0]['value'];
-    $rate = $stipend/$periods;
+    $rate = $stipend/$periods; //YOU HAVE TO LIMIT THE OUTPUT OF THE DECIMALS
     //Totals
     $total_stipend = $total_stipend + $stipend;
     $total_rate = $total_rate + $rate;
-    
+    //Position # from account #
+    $position = get_position_num($account);
     //create the row
     $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date->format('m-d-Y').'</td><td>'
       .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'.$rate.'</td><td>$'.$stipend.'</td></tr>';
@@ -364,7 +548,7 @@ function generate_appointment_html($stud_list,$term_id,$dept){
 
   //Don't forget to style this final row differently
   $table_footer = '<tr class="last-row"><td></td><td></td><td></td><td></td><td></td><td></td>
-                   <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals">'.$total_rate.'</td><td class="final-totals">'.$total_stipend.'</td></tr></table>';
+                   <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals"> $'.$total_rate.'</td><td class="final-totals"> $'.$total_stipend.'</td></tr></table>';
 
   $list_html = $list_html.$table_footer;
 
@@ -375,7 +559,7 @@ function generate_appointment_html($stud_list,$term_id,$dept){
                                                     <div class="accnt-exec-line"><p>Account Executive</p></div>
                                                     <div class="date-line"><p>Date</p></div></div>
                   <div class="sub-table-4 clearfix"><p id="ddu">DDU</p><div class="internal-use-line"></div></div>
-                  <div class="sub-table-5 clearfix"><p id="position-num">Position #</p><div class="internal-use-line"></div></div>
+                  <div class="sub-table-5 clearfix"><p id="position-num">Position #</p><div class="internal-use-line"><p> '.$position.'</p></div></div>
                   <div class="sub-table-6 clearfix"><div class="no-status-change"><p>This form may not be used to report</p>
                                                                                   <p>change in existing status</p></div>
                                                     <div class="initials-table-div">
