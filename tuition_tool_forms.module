@@ -2,7 +2,6 @@
 
   /* MAKE SURE NONE OF MY FUNCTIONS CONFLICT WITH MY OTHER MODULE. */
 
-
 function tuition_tool_forms_menu(){
   $menu_items = array();
 
@@ -128,8 +127,6 @@ function get_years_for_forms(){
   return $years;
 }
 
-
-
 function get_terms_for_forms($year){
   //need to use a query function to get terms for the current year.
 
@@ -154,7 +151,6 @@ function get_terms_for_forms($year){
   }
 
   return $terms;
-
 }
 
 function get_dept_ents_from_url($form_url){
@@ -202,31 +198,63 @@ function get_dept_ents_from_url($form_url){
     break;
   default:
     return array('misc_aid_entry','misc_aid_type');
-  
   }
-
 }
 
 function get_dept_title_from_url($form_url){
- 
+  $dept_forms_array = explode('/',$form_url);
+  $dept = explode('_forms',$dept_forms_array[4]);
 
-
- return $form_url;
+  switch ($dept[0]){
+  case 'american':
+    return 'American Studies';
+    break;
+  case 'biology':
+    return 'Biological Sciences';
+    break;
+  case 'chemistry':
+    return 'Chemistry';
+    break;
+  case 'ees':
+    return 'Earth and Environmental Sciences';
+    break;
+  case 'english':
+    return 'English';
+    break;
+  case 'epd':
+    return 'Environmental Policy';
+    break;
+  case 'history':
+    return 'History';
+    break;
+  case 'math':
+    return 'Mathematics';
+    break;
+  case 'physics':
+    return 'Physics';
+    break;
+  case 'polisci':
+    return 'Political Science';
+    break;
+  case 'psychology':
+    return 'Psychology';
+    break;
+  case 'socanthro':
+    return 'Sociology';
+    break;
+  default:
+    return array('misc_aid_entry','misc_aid_type');
+  }
 }
 
 function get_ta_students($term, $year,$form_url){
   $dept_ents = get_dept_ents_from_url($form_url);
-
   $entry=$dept_ents[0];
   $aid=$dept_ents[1];
-
-  //$entry = 'physics_aid_entry'; DEBUG
-  //$aid = 'physics_aid_type'; DEBUG
 
   $students = array();
 
   //First get the tid of the aid type
-
   $aid_query = new EntityFieldQuery;
   $aid_query-> entityCondition('entity_type','node')
     ->entityCondition('bundle',$aid)
@@ -240,17 +268,16 @@ function get_ta_students($term, $year,$form_url){
   $aid_nid = $aid_result[0]->nid;
 
   //NOW DO A FIELD QUERY ON THE AID ENTRY AND RETURN A LIST OF RELEVANT VALUES INDEXED BY THE NID
-
   $entry_query = new EntityFieldQuery;
   $entry_query-> entityCondition('entity_type','node')
     ->entityCondition('bundle',$entry)
     ->propertyCondition('status',NODE_PUBLISHED)
-    ->fieldCondition('field_stipend','value',0,'>')//STIPEND
+    ->fieldCondition('field_stipend','value',0,'>')//STIPEND IS THIS REQUIRED? IT FILTERS OUT STIPEND < 0
     ->fieldCondition('field_term','tid',$term,'=')
     ->fieldCondition('field_aid_type','target_id',$aid_nid,'=');
   
   $match_entries = $entry_query->execute();
-  
+
   foreach($match_entries['node'] as $myentry){
     $match_ids[] = $myentry->nid;
   }
@@ -258,16 +285,15 @@ function get_ta_students($term, $year,$form_url){
   
   foreach($load_entries as $curentry){
     $students[$curentry->nid] = array(
-
       'last' => $curentry->field_student_last_name['und'][0]['value'],
       'first' => $curentry->field_student_first_name['und'][0]['value'],
       'account' => $curentry->field_account_number['und'][0]['value'],
+      'stipend' =>$curentry->field_stipend['und'][0]['value'],
+     
       'effort' => $curentry->field_effort['und'][0]['value'],
       'periods' => $curentry->field_pay_periods['und'][0]['value'],
-      'stipend' =>$curentry->field_stipend['und'][0]['value']
 				      );
   }
-
 
   return $students;
 }
@@ -284,10 +310,7 @@ function tuition_tool_forms_landing($form, &$form_state){
 }
 
 function tuition_tool_forms_ta_ga_form($form, &$form_state){
-
   $default_year = variable_get('default_year');
-  $temp_term = 'my_term';
-  $temp_dept = 'physics';
 
   $formyears = get_years_for_forms(); //This will stay, some of the other variables will change.
 
@@ -354,7 +377,6 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
 	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
 	'#options' => !empty($form_state['values']['select_term']) ? 
 	get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$form_state['complete form']['#action']) : $blank_table,
-	//get_ta_students($form_state['values']['select_term'],$form_state['values']['set_form_year'],$temp_dept) : $blank_table,
 	'#weight' => 10,
 								  );  
   $form['dev_notes'] = array(
@@ -401,7 +423,6 @@ function tuition_tool_forms_ta_ga_form($form, &$form_state){
       }
       $form['generated_appointment_list'] = array(
 						  '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'])
-						  //'#markup' => generate_appointment_html($student_list,$term_id,$temp_dept)
 						  );
     }
   }
@@ -418,7 +439,6 @@ function alter_term_choices($form,$form_state){
 }
 
 function get_position_num($account){
-
   switch ($account){
   case '211105': 
     $position = 'GT9960'; //Bio
@@ -463,8 +483,9 @@ function get_position_num($account){
       return $position;
 }
 
-function generate_appointment_html($stud_list,$term_id,$dept){
+function generate_appointment_html($stud_list,$term_id,$form_url){
   $accntend = 61510;
+  $dept = get_dept_title_from_url($form_url);
   $list_html = '';
 
   $term_load = entity_load('taxonomy_term',array($term_id));
@@ -493,19 +514,20 @@ function generate_appointment_html($stud_list,$term_id,$dept){
       }
     }
 
-    //probably need to reset these so that we don't get old data.
-    //also don't forget to check to make sure some of these fields are filled in before getting the value
+    //If I make these other fields required when entering stipend I don't need to be worried about there not being data in a field.
     $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
     $id =  $curentry->field_lin['und'][0]['value'];
     $phone =  $curentry->field_phone['und'][0]['value'];
+
     $start =  $curentry->field_aid_date['und'][0]['value'];
     $end =  $curentry->field_aid_date['und'][0]['value2'];
     $start_date = new DateTime($start);
     $end_date = new DateTime($end);
+
     $effort = $curentry->field_effort['und'][0]['value'];
     $periods = $curentry->field_pay_periods['und'][0]['value'];
     $stipend = $curentry->field_stipend['und'][0]['value'];
-    $rate = $stipend/$periods; //YOU HAVE TO LIMIT THE OUTPUT OF THE DECIMALS
+    $rate = $stipend/$periods;
     //Totals
     $total_stipend = $total_stipend + $stipend;
     $total_rate = $total_rate + $rate;
@@ -513,7 +535,8 @@ function generate_appointment_html($stud_list,$term_id,$dept){
     $position = get_position_num($account);
     //create the row
     $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date->format('m-d-Y').'</td><td>'
-      .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'.$rate.'</td><td>$'.$stipend.'</td></tr>';
+      .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'
+      .number_format($rate,2,'.',',').'</td><td>$'.number_format($stipend,2,'.',',').'</td></tr>';
 
     //Add the row to the list
     $table_html = $table_html.$thisrow;
@@ -548,7 +571,8 @@ function generate_appointment_html($stud_list,$term_id,$dept){
 
   //Don't forget to style this final row differently
   $table_footer = '<tr class="last-row"><td></td><td></td><td></td><td></td><td></td><td></td>
-                   <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals"> $'.$total_rate.'</td><td class="final-totals"> $'.$total_stipend.'</td></tr></table>';
+                   <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals"> $'.number_format($total_rate,2,'.',',')
+                   .'</td><td class="final-totals"> $'.number_format($total_stipend,2,'.',',').'</td></tr></table>';
 
   $list_html = $list_html.$table_footer;
 
@@ -580,22 +604,7 @@ function generate_appointment_html($stud_list,$term_id,$dept){
     return $list_html;
 }
 
-
-
 function tuition_tool_forms_ta_ga_submit($form, &$form_state){
-
-  //drupal_get_form('tuition_tool_ta_ga_form_output');
-
   $form_state['rebuild'] = TRUE;
-  //$form_state['redirect'] = 'node/1';
-
-}
-
-function tuition_tool_ta_ga_form_output($form, &$form_state){
-
-  dsm($form_state);
-  
-  return $form;
-  
 }
 
