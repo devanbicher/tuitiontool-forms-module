@@ -248,7 +248,7 @@ function get_dept_title_from_url($form_url){
 }
 
 //I won't need year, I will only need the aid_nid after I change this functionality.
-function get_ta_students($term,$form_url,$aid_nid){
+function get_ta_students($term,$form_url,$aid_nids){
   //function get_ta_students($term, $year,$form_url){
   $dept_ents = get_dept_ents_from_url($form_url);
   $entry=$dept_ents[0];
@@ -263,7 +263,8 @@ function get_ta_students($term,$form_url,$aid_nid){
     ->propertyCondition('status',NODE_PUBLISHED)
     ->fieldCondition('field_stipend','value',0,'>')//STIPEND IS THIS REQUIRED? IT FILTERS OUT STIPEND < 0
     ->fieldCondition('field_term','tid',$term,'=')
-    ->fieldCondition('field_aid_type','target_id',$aid_nid,'=');
+    //->fieldCondition('field_aid_type','target_id',$aid_nid,'=');//old condition when there was only 1 nid.
+    ->fieldCondition('field_aid_type','target_id',$aid_nids,'IN');
   
   $match_entries = $entry_query->execute();
 
@@ -327,7 +328,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 
   $formyears = get_years_for_forms(); //This will stay, some of the other variables will change.
 
-  $blank_header = array('meh'=>'PLEASE SELECT A TERM TO GENERATE A LIST OF STUDENTS FROM WHICH YOU CAN GENERATE YOUR FORM');
+  $blank_header = array('meh'=>'PLEASE SELECT A TERM AND AID TYPE TO GENERATE A LIST OF STUDENTS FROM WHICH YOU CAN GENERATE YOUR FORM');
   $blank_table = array();
 
   $header = array(
@@ -387,6 +388,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
   $form['term_select_field_set']['select_aid_type']['aid_type_select_list'] = array(
 	'#type' => 'select',
 	'#title' => t('THIRD: Please Select the aid types from which to generate your form'),
+	'#multiple' => TRUE,
 	'#required' => TRUE,
 	'#options' => !empty($form_state['values']['set_form_year']) ? get_aid_types_for_form($form_state['values']['set_form_year'], $form_state['complete form']['#action']) : array('empty-list'),
 	'#ajax' => array(
@@ -410,10 +412,12 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	get_ta_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list']) : $blank_table,
 	'#weight' => 10,
 								  );  
-  $form['dev_notes'] = array(
+  $form['term_select_field_set']['dev_notes'] = array(
 			     '#type' => 'markup',
-			     '#markup' => 'Do not forget to alter the css of the actual tool to remove the save config button.',
-			     '#weight' => -1,
+			     '#markup' => '<p>You might need to add a check box/radio for selecting either students with tuition>0 or stipend>0</p>
+                                           <p>You might also need to make the select aid type able to select multiple aid types.</p> 
+                                           <p>in either case you will need to alter the code for generating the students table. But not the TA/GA form I think.</p> ',
+			     '#weight' => -10,
 			     );
   $form['form_building_buttons'] = array(
 					 '#title' => 'Form Generating buttons',
@@ -427,6 +431,15 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 			  '#submit' => array('tuition_tool_forms_ta_ga_submit'),
 			  '#weight' => -5,
 			  );
+
+  $form['form_building_buttons']['generate_payroll_asignment_form'] = array(
+			  '#type' => 'submit',
+			  '#value' => 'Generate Payroll Asignment Forms',
+			  '#submit' => array('tuition_tool_forms_payroll_assignment'),
+			  '#weight' => -4,
+								   );
+								   
+  
 
   //This space below here generates the form. 
   if(!empty($form_state['values']['choose_students_table'])){
@@ -462,7 +475,8 @@ function tuition_tool_forms_generating_form($form, &$form_state){
     }
   }
   
-  return system_settings_form($form);
+  //return system_settings_form($form); this puts the save config button on the bottom.
+  return $form;
 }
 
 function get_aid_type_list($form, &$form_state){
@@ -655,3 +669,40 @@ function tuition_tool_forms_ta_ga_submit($form, &$form_state){
   $form_state['rebuild'] = TRUE;
 }
 
+function tuition_tool_forms_payroll_assignment($form, &$form_state){
+  $form_state['rebuild'] = FALSE;
+  
+  dsm($form_state);
+
+  //DONT FORGET EACH STUDENT GETS THEIR OWN FORM!!
+
+  $department = get_dept_title_from_url($form_state['complete form']['#action']);
+
+  $entities = entity_load('node',$form_state['values']['choose_student_table']);
+  
+  $header_info = array();
+  $accounts = array();
+
+  foreach($entities as $curentry){
+    $first_name =$curentry->field_student_first_name['und'][0]['value'];
+    $last_name = $curentry->field_student_last_name['und'][0]['value'];
+    $id =  $curentry->field_lin['und'][0]['value'];
+    $phone =  $curentry->field_phone['und'][0]['value'];
+    $stipend = $curentry->field_stipend['und'][0]['value'];
+    $location = $curentry->field_check_location['und'][0]['value'];
+    $account = $curentry->field_account_number['und'][0]['value'];
+    //non-required fields
+    //REPLACE MY NAME IN THIS VARIABLE!!
+    $contact = !empty($curentry->field_contact['und'][0]['value']) ? $curentry->field_contact['und'][0]['value'] : 'Devan Bicher'; 
+    $start =  !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 0;
+    $end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 0;
+    $start_date = new DateTime($start);
+    $end_date = new DateTime($end);
+    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : '--';
+    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : '--';
+    $rate = !empty($curentry->field_pay_periods['und'][0]['value']) ? $stipend/$periods : 0;
+
+
+  } 
+
+}
