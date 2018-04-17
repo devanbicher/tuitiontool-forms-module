@@ -248,7 +248,9 @@ function get_dept_title_from_url($form_url){
 }
 
 //I won't need year, I will only need the aid_nid after I change this functionality.
-function get_ta_students($term,$form_url,$aid_nids){
+function get_ta_students($term,$form_url,$aid_nids,$stipendtuition){
+  //Old calls to this function
+  //function get_ta_students($term,$form_url,$aid_nids){
   //function get_ta_students($term, $year,$form_url){
   $dept_ents = get_dept_ents_from_url($form_url);
   $entry=$dept_ents[0];
@@ -261,10 +263,17 @@ function get_ta_students($term,$form_url,$aid_nids){
   $entry_query-> entityCondition('entity_type','node')
     ->entityCondition('bundle',$entry)
     ->propertyCondition('status',NODE_PUBLISHED)
-    ->fieldCondition('field_stipend','value',0,'>')//STIPEND IS THIS REQUIRED? IT FILTERS OUT STIPEND < 0
     ->fieldCondition('field_term','tid',$term,'=')
-    //->fieldCondition('field_aid_type','target_id',$aid_nid,'=');//old condition when there was only 1 nid.
     ->fieldCondition('field_aid_type','target_id',$aid_nids,'IN');
+  
+  if($stipendtuition == 1){
+    $entry_query->fieldCondition('field_tuition','value',0,'>');
+  }
+  else{
+    //STIPEND IS THIS REQUIRED? IT FILTERS OUT STIPEND < 0
+    $entry_query->fieldCondition('field_stipend','value',0,'>');
+  }
+
   
   $match_entries = $entry_query->execute();
 
@@ -273,18 +282,18 @@ function get_ta_students($term,$form_url,$aid_nids){
   foreach($load_entries as $curentry){
     $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : 0;
     $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : 0;
+    $tuition = !empty($curentry->field_tuition['und'][0]['value']) ? '$'.number_format($curentry->field_tuition['und'][0]['value'],2,'.',',') : 0;
+    $stipend = !empty($curentry->field_stipend['und'][0]['value']) ? '$'.number_format($curentry->field_stipend['und'][0]['value'],2,'.',',') : 0;
 
     $students[$curentry->nid] = array(
       'last' => $curentry->field_student_last_name['und'][0]['value'],
       'first' => $curentry->field_student_first_name['und'][0]['value'],
       'account' => $curentry->field_account_number['und'][0]['value'],
-      'stipend' => '$'.number_format($curentry->field_stipend['und'][0]['value'],2,'.',','),
       //below here the values aren't required, for now.      
+      'stipend' => $stipend,
       'effort' => $effort,
       'periods' => $periods, 
-      // in case I make them required when entering stipend.
-      //'effort' => $curentry->field_effort['und'][0]['value'],
-      //'periods' => $curentry->field_pay_periods['und'][0]['value'],
+      'tuition' => $tuition,
 				      );
   }
 
@@ -337,7 +346,8 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 		  'account' => 'Account',
 		  'effort' => 'Effort',
 		  'periods' => 'Pay Periods',
-		  'stipend' => 'Stipend'
+		  'stipend' => 'Stipend',
+		  'tuition' => 'Tuition'
 		  );
 
   $form['set_ta_ga_actions'] = array(
@@ -377,16 +387,15 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 			 'method' => 'replace',
 			 'effect' => 'fade'),
 							);
-
   $form['term_select_field_set']['select_aid_type'] = array(
-	'#type' => 'actions',
-	'#weight' => -1,
+	'#type' => 'fieldset',
+	'#weight' => -3,
 	'#prefix' => '<div id="select-aid-type-list">',
 	'#suffix' => '</div>',
 							    );
-  //get_aid_types_for_form($year, $form_url)
   $form['term_select_field_set']['select_aid_type']['aid_type_select_list'] = array(
 	'#type' => 'select',
+	'#weight' => -4,
 	'#title' => t('THIRD: Please Select the aid types from which to generate your form'),
 	'#multiple' => TRUE,
 	'#required' => TRUE,
@@ -397,50 +406,64 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 			 'method' => 'replace',
 			 'effect' => 'fade'),
 											      );
-
-  $form['term_select_field_set']['select_ta_ga_students'] = array(
+    $form['term_select_field_set']['select_aid_type']['tuition_or_stipend'] = array(
+        '#type' => 'radios',
+	'#title' => t('FOURTH: Choose which Field, Tuition or Stipend, Students must have a value for to be in the list'),
+	'#weight' => -2,
+	'#options' => array(0 => t('Stipend > 0'), 1 => t('Tuition > 0')),
+	'#default_value' => 0,
+	'#description' => t('Please choose if the list of students should be populated with students with stipend > 0 (for TA/GA Appointment list or Payroll assignment form) or Tuition > 0 (for Tuition Award form)'),
+	'#ajax' => array(
+			 'callback' => 'create_student_choices',
+			 'wrapper' => 'select-students-table',
+			 'method' => 'replace',
+			 'effect' => 'fade'),
+							       );
+  $form['term_select_field_set']['select_aid_type']['select_ta_ga_students'] = array(
 	'#type' => 'actions',
 	'#weight' => 0,
 	'#prefix' => '<div id="select-students-table">',
 	'#suffix' => '</div>',
 					 );
-
-  $form['term_select_field_set']['select_ta_ga_students']['choose_students_table'] = array(
+  $form['term_select_field_set']['select_aid_type']['select_ta_ga_students']['choose_students_table'] = array(
 	'#type' => 'tableselect',
 	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
 	'#options' =>(!empty($form_state['values']['select_term']) && !empty($form_state['values']['aid_type_select_list'])) ? 
-	get_ta_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list']) : $blank_table,
+	get_ta_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'],$form_state['values']['tuition_or_stipend']) : $blank_table,
 	'#weight' => 10,
-								  );  
+								  );
   $form['term_select_field_set']['dev_notes'] = array(
-			     '#type' => 'markup',
-			     '#markup' => '<p>You might need to add a check box/radio for selecting either students with tuition>0 or stipend>0</p>
-                                           <p>You might also need to make the select aid type able to select multiple aid types.</p> 
-                                           <p>in either case you will need to alter the code for generating the students table. But not the TA/GA form I think.</p> ',
-			     '#weight' => -10,
+        '#type' => 'markup',
+	'#markup' => '<p>Put Notes and/or Questions for MaryAnn Here</p>'.
+                     '<p>Should the <strong>Aid Type Select Field</strong> only Allow for 1 aid Type? If multiple what goes in the Aid Type fields for the pdf forms?</p>'.
+	'<p>Should the Different Forms only allow Certain Aid Types(which would be difficult) or Should they allow anything the user has selected?</p>',
+	'#weight' => -10,
 			     );
+  /*FORM GENERATING BUTTONS!*/
   $form['form_building_buttons'] = array(
-					 '#title' => 'Form Generating buttons',
-					 '#type' => 'fieldset',
-					 '#weight' => -5,
+	'#title' => 'Form Generating buttons',
+	'#type' => 'fieldset',
+	'#weight' => -5,
 					 );
-
   $form['form_building_buttons']['build_appointment_list'] = array(
-			  '#type' => 'submit',
-			  '#value' => 'Build TA/GA Appointment List',
-			  '#submit' => array('tuition_tool_forms_ta_ga_submit'),
-			  '#weight' => -5,
-			  );
-
-  $form['form_building_buttons']['generate_payroll_asignment_form'] = array(
-			  '#type' => 'submit',
-			  '#value' => 'Generate Payroll Asignment Forms',
-			  '#submit' => array('tuition_tool_forms_payroll_assignment'),
-			  '#weight' => -4,
+        '#type' => 'submit',
+	'#value' => 'Build TA/GA Appointment List',
+	'#submit' => array('tuition_tool_forms_ta_ga_submit'),
+	'#weight' => -5,
 								   );
+  $form['form_building_buttons']['generate_payroll_asignment_form'] = array(
+        '#type' => 'submit',
+	'#value' => 'Generate Payroll Asignment Forms',
+	'#submit' => array('tuition_tool_forms_payroll_assignment'),
+	'#weight' => -4,
+								   );
+  $form['form_building_buttons']['generate_tuition_award_form'] = array(
+	'#type' => 'submit',
+	'#value' => 'Generate Tuition Award Forms',
+	'#submit' => array('tuition_tool_forms_tuition_award'),
+	'#weight' => -3,
+									);
 								   
-  
-
   //This space below here generates the form. 
   if(!empty($form_state['values']['choose_students_table'])){
     $students_selected = FALSE;//This variable and following for loop makes sure this doesn't activate unless students are selected
@@ -484,7 +507,7 @@ function get_aid_type_list($form, &$form_state){
 }
 
 function create_student_choices($form, $form_state){
-  return $form['term_select_field_set']['select_ta_ga_students'];
+  return $form['term_select_field_set']['select_aid_type']['select_ta_ga_students'];
 }
 
 function alter_term_choices($form,$form_state){
@@ -705,4 +728,16 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 
   } 
 
+}
+
+function generate_payroll_single_pdf($pdf_info){
+}
+
+function tuition_tool_forms_tuition_award($form, &$form_state){
+}
+
+function generate_tuition_single_pdf($pdf_info){
+}
+
+function present_filled_pdf($pdf){
 }
