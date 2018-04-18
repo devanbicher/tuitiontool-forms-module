@@ -154,7 +154,7 @@ function get_terms_for_forms($year){
 }
 
 function get_dept_ents_from_url($form_url){
-  //only used in get_ta_students
+  //only used in get_students
 
   $dept_forms_array = explode('/',$form_url);
   $dept = explode('_forms',$dept_forms_array[4]);
@@ -247,11 +247,7 @@ function get_dept_title_from_url($form_url){
   }
 }
 
-//I won't need year, I will only need the aid_nid after I change this functionality.
-function get_ta_students($term,$form_url,$aid_nids,$stipendtuition){
-  //Old calls to this function
-  //function get_ta_students($term,$form_url,$aid_nids){
-  //function get_ta_students($term, $year,$form_url){
+function get_students($term,$form_url,$aid_nid,$stipendtuition){
   $dept_ents = get_dept_ents_from_url($form_url);
   $entry=$dept_ents[0];
   $aid=$dept_ents[1];
@@ -264,7 +260,7 @@ function get_ta_students($term,$form_url,$aid_nids,$stipendtuition){
     ->entityCondition('bundle',$entry)
     ->propertyCondition('status',NODE_PUBLISHED)
     ->fieldCondition('field_term','tid',$term,'=')
-    ->fieldCondition('field_aid_type','target_id',$aid_nids,'IN');
+    ->fieldCondition('field_aid_type','target_id',$aid_nid,'=');
   
   if($stipendtuition == 1){
     $entry_query->fieldCondition('field_tuition','value',0,'>');
@@ -397,7 +393,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	'#type' => 'select',
 	'#weight' => -4,
 	'#title' => t('THIRD: Please Select the aid types from which to generate your form'),
-	'#multiple' => TRUE,
+	//'#multiple' => TRUE,
 	'#required' => TRUE,
 	'#options' => !empty($form_state['values']['set_form_year']) ? get_aid_types_for_form($form_state['values']['set_form_year'], $form_state['complete form']['#action']) : array('empty-list'),
 	'#ajax' => array(
@@ -429,14 +425,12 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	'#type' => 'tableselect',
 	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
 	'#options' =>(!empty($form_state['values']['select_term']) && !empty($form_state['values']['aid_type_select_list'])) ? 
-	get_ta_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'],$form_state['values']['tuition_or_stipend']) : $blank_table,
+	get_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'],$form_state['values']['tuition_or_stipend']) : $blank_table,
 	'#weight' => 10,
 								  );
   $form['term_select_field_set']['dev_notes'] = array(
         '#type' => 'markup',
-	'#markup' => '<p>Put Notes and/or Questions for MaryAnn Here</p>'.
-                     '<p>Should the <strong>Aid Type Select Field</strong> only Allow for 1 aid Type? If multiple what goes in the Aid Type fields for the pdf forms?</p>'.
-	'<p>Should the Different Forms only allow Certain Aid Types(which would be difficult) or Should they allow anything the user has selected?</p>',
+	'#markup' => '',
 	'#weight' => -10,
 			     );
   /*FORM GENERATING BUTTONS!*/
@@ -493,7 +487,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	}
       }
       $form['generated_appointment_list'] = array(
-						  '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'],'AID TYPE PLACEHOLDER')
+						  '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'])
 						  );
     }
   }
@@ -514,7 +508,11 @@ function alter_term_choices($form,$form_state){
   return $form['term_select_field_set'];
 }
 
-function get_position_num($account){
+//function get_position_num($account){
+function get_position_num($account,$aid_nid){
+  $load_aid_type = entity_load('node',array($aid_nid));
+  //get the aid title for the wierd departments
+  $aid_title = strtolower(trim($load_aid_type[$aid_nid]->title));
   switch ($account){
   case '211105': 
     $position = 'GT9960'; //Bio
@@ -526,15 +524,28 @@ function get_position_num($account){
     $position = 'GT9940'; //EES
     break;
   case '211115':
-    $position = 'GT9930'; //English
-    //There are 2 different numbers for English depending on the TA type.  but this is affected by how this form generating process works, i.e. if they can choose any aid type
+    //English
+    if($aid_title=='ta'){
+      $position = 'GT9930';
+    }
+    elseif($aid_title=='senior ta'){
+      $position = 'GT9940';
+    }
+    else{
+      $position = '';
+    }
     break;
   case '211135':
     $position = 'GT9910'; //History
     break;
   case '211145':
-    $position = 'GT9900'; //Math
-    //Like English this changed depending on the actual aid type.
+    //Math
+    if($aid_title == 'grader' || $aid_title == 'graders'){
+      $position = 'GT9890';
+    }
+    else{
+      $position = 'GT9900';
+    }
     break;
   case '211340':
     $position = 'GT9880';//Physics
@@ -543,8 +554,13 @@ function get_position_num($account){
     $position = 'GT9870';//PoliSci
     break;
   case '211165':
-    $position = 'GT9850';//Psych
-    //Like Math and English this changes depending on the aid typ
+    //Psych
+    if($aid_title == 'ta'){
+      $position = 'GT9850';
+    }
+    else{
+      $position = 'GT9860';
+    }
     break;
   case '211175':
     $position = 'GT9840'; //Socanthro
@@ -559,7 +575,7 @@ function get_position_num($account){
       return $position;
 }
 
-function generate_appointment_html($stud_list,$term_id,$form_url,$aid_type){
+function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   $accntend = 61510;
   $dept = get_dept_title_from_url($form_url);
   $list_html = '';
@@ -582,11 +598,13 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_type){
   foreach($entities as $curentry){
     if($counter == 0){
       $account = $curentry->field_account_number['und'][0]['value']; //set the account number to make sure they are all the same
+      //Position # from account #
+      $position = get_position_num($account,$aid_nid);
     }
     else{
       $cur_account = $curentry->field_account_number['und'][0]['value'];
       if($cur_account != $account){
-	return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number</h1>";
+	return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number for this form</h1>";
       }
     }
 
@@ -615,8 +633,6 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_type){
     //Totals
     $total_stipend = $total_stipend + $stipend;
     $total_rate = $total_rate + $rate;
-    //Position # from account #
-    $position = get_position_num($account);
     //create the row
     $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date->format('m-d-Y').'</td><td>'
       .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'
