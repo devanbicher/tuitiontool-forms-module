@@ -717,36 +717,123 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 
   $department = get_dept_title_from_url($form_state['complete form']['#action']);
 
-  $entities = entity_load('node',$form_state['values']['choose_student_table']);
+  $entities = entity_load('node',$form_state['values']['choose_students_table']);
   
-  $header_info = array();
-  $accounts = array();
+  //$header_info = array(); //holds info for the header part of the form
+  //$accounts = array();
+  //get the aid type
+  $aid_nid = $form_state['values']['aid_type_select_list'];
+  $aid_ent = entity_load('node',array($aid_nid));
+  $aid_type = $aid_ent[$aid_nid]->title;
 
-  foreach($entities as $curentry){
-    $first_name =$curentry->field_student_first_name['und'][0]['value'];
-    $last_name = $curentry->field_student_last_name['und'][0]['value'];
+  $lin_list = array();
+  $error_list = array();
+
+  foreach($entities as $nid => $curentry){
     $id =  $curentry->field_lin['und'][0]['value'];
-    $phone =  $curentry->field_phone['und'][0]['value'];
-    $stipend = $curentry->field_stipend['und'][0]['value'];
-    $location = $curentry->field_check_location['und'][0]['value'];
     $account = $curentry->field_account_number['und'][0]['value'];
-    //non-required fields
-    //REPLACE MY NAME IN THIS VARIABLE!!
-    $contact = !empty($curentry->field_contact['und'][0]['value']) ? $curentry->field_contact['und'][0]['value'] : 'Devan Bicher'; 
-    $start =  !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 0;
-    $end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 0;
-    $start_date = new DateTime($start);
-    $end_date = new DateTime($end);
-    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : '--';
-    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : '--';
-    $rate = !empty($curentry->field_pay_periods['und'][0]['value']) ? $stipend/$periods : 0;
+    
+    if(empty($curentry->field_aid_date['und'][0]['value']) || empty($curentry->field_aid_date['und'][0]['value2']) || empty($curentry->field_pay_periods['und'][0]['value']) || empty($curentry->field_effort['und'][0]['value'])){
+      drupal_set_message("Start Date, End Date, Pay Periods, and Effort ALL must be filled in for each entry. Skipping all entries with LIN: ".$id,'error');
+      $error_list[$id] = 1;
+      if(isset($lin_list[$id])){
+	unset($lin_list[$id]);
+      }
+    }
+    elseif($curentry->field_pay_periods['und'][0]['value'] > 50){
+      drupal_set_message('Pay Periods must be less than %50 error on <a href="/node/'.$nid.'>node/'.$nid.'</a>'.' Skipping all entries with LIN: '.$id,'error');
+      $error_list[$id] = 1;
+      if(isset($lin_list[$id])){
+	unset($lin_list[$id]);
+      }
+    }
+    else{															    
+      $start_date = new DateTime($curentry->field_aid_date['und'][0]['value']);
+      $end_date = new DateTime($curentry->field_aid_date['und'][0]['value2']);
+      $periods = $curentry->field_pay_periods['und'][0]['value'];
+      $effort = $curentry->field_effort['und'][0]['value'];
+      $full_name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
+      
+      if(isset($lin_list[$id]) && !(isset($error_list[$id]))){	
+	
+	//CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
+	$first_nid = $lin_list[$id]['header']['first_nid'];
+	//START DATE
+	if($start_date != $lin_list[$id]['header']['start']){
+	  drupal_set_message('Error: START DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the start date(s) or print out the forms separately.','error');
+	  unset($lin_list[$id]);
+	  $error_list[$id] = 1;
+	  continue;
+	}
+	//END DATE
+	elseif($end_date != $lin_list[$id]['header']['end']){
+	  drupal_set_message('Error: END DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the end date(s) or print out the forms separately.','error');
+	  unset($lin_list[$id]);
+	  $error_list[$id] = 1;
+	  continue;
+	}
+	//PAY PERIODS
+	elseif($periods != $lin_list[$id]['header']['periods']){
+	  drupal_set_message('Error: PAY PERIODS mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the Pay Periods or print out the forms separately.','error');
+	  unset($lin_list[$id]);
+	  $error_list[$id] = 1;
+	  continue;
+	}
+	elseif($effort != $lin_list[$id]['header']['effort']){
+	  drupal_set_message('Error: Start D mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the %Effort or print out the forms separately.','error');
+	  unset($lin_list[$id]);
+	  $error_list[$id] = 1;
+	  continue;
+	}
+	else{
+	  //Add the account and stipend to the list
+	  $lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];
+	} 
+      }
+      else{	//create a new entry in the list of lins since it's not in the error list or not already in the list
+	$lin_list[$id] = array();
 
+	//create the header info array
+	$lin_list[$id]['header'] = array(
+					 'last' => $curentry->field_student_last_name['und'][0]['value'],
+					 'first' => $curentry->field_student_first_name['und'][0]['value'],
+					 'dept' => get_dept_title_from_url($form_state['complete form']['#action']),
+					 'location' => $curentry->field_check_location['und'][0]['value'],
+					 'contact' => !empty($curentry->field_contact['und'][0]['value']) ? $curentry->field_contact['und'][0]['value'] : '',
+					 'phone' => $curentry->field_phone['und'][0]['value'],
+					 'aid_type' => $aid_type,
+					 'periods' => $periods,
+					 'effort' => $effort,
+					 'start' => $start_date,
+					 'end' => $end_date,
+					 'first_nid' => $nid,
+					 );
+	//create the accounts part of the list
+	$lin_list[$id]['accounts'] = array();
+	$lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];
+    }
+    //array of information completed
+      } 
+  }     
 
-  } 
+  dsm($lin_list);
+
+  $pdf_list = array();
+
+  foreach($lin_list as $lin => $form_values){
+    $all_pdfs[] = generate_payroll_single_pdf($lin,$form_values);
+  }
+
+  present_filled_pdf($pdf_list);
+
+  //maybe delete the filled pdf, or just send a success or error message here at the end.
 
 }
 
-function generate_payroll_single_pdf($pdf_info){
+function generate_payroll_single_pdf($lin,$form_info){
+  
+  return 'Nothing for now';
+
 }
 
 function tuition_tool_forms_tuition_award($form, &$form_state){
@@ -755,5 +842,9 @@ function tuition_tool_forms_tuition_award($form, &$form_state){
 function generate_tuition_single_pdf($pdf_info){
 }
 
-function present_filled_pdf($pdf){
+function present_filled_pdf($pdf_list){
+  //I can use this to present both types of pdf's
+
+  dsm('hey we made it all the way to the last function');
+
 }
