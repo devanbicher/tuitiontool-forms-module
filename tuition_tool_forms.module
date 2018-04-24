@@ -281,6 +281,11 @@ function get_students($term,$form_url,$aid_nid,$stipendtuition){
     $tuition = !empty($curentry->field_tuition['und'][0]['value']) ? '$'.number_format($curentry->field_tuition['und'][0]['value'],2,'.',',') : 0;
     $stipend = !empty($curentry->field_stipend['und'][0]['value']) ? '$'.number_format($curentry->field_stipend['und'][0]['value'],2,'.',',') : 0;
 
+    $start = !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 0;
+    $end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 0;
+    $start_date = new DateTime($start);
+    $end_date = new DateTIme($end);
+    
     $students[$curentry->nid] = array(
       'last' => $curentry->field_student_last_name['und'][0]['value'],
       'first' => $curentry->field_student_first_name['und'][0]['value'],
@@ -290,6 +295,8 @@ function get_students($term,$form_url,$aid_nid,$stipendtuition){
       'effort' => $effort,
       'periods' => $periods, 
       'tuition' => $tuition,
+      'start' => $start_date->format('m-d-Y'),
+      'end' => $end_date->format('m-d-Y'),
 				      );
   }
 
@@ -343,7 +350,9 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 		  'effort' => 'Effort',
 		  'periods' => 'Pay Periods',
 		  'stipend' => 'Stipend',
-		  'tuition' => 'Tuition'
+		  'tuition' => 'Tuition',
+		  'start' => 'Start Date',
+		  'end' => 'End Date',
 		  );
 
   $form['set_ta_ga_actions'] = array(
@@ -831,7 +840,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 }
 
 function generate_payroll_single_pdf($lin,$form_info){
-  
+  //don't forget to convert the DateTime objects to readable format.
   return 'Nothing for now';
 
 }
