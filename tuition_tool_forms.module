@@ -20,7 +20,7 @@ function tuition_tool_forms_menu(){
        'page arguments' => array('tuition_tool_forms_generating_form'),
        'access arguments' => array('access american defaults'),
 							  );
-  $menu_items['admin/content/tuition_tool_forms/biology_forms'] = array(
+  $menu_items['admin/content/tuition_tool_forms/bio_forms'] = array(
        'title' => 'Biology Forms',
        'description' => 'Generate the Biology TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
@@ -85,14 +85,14 @@ function tuition_tool_forms_menu(){
        'page arguments' => array('tuition_tool_forms_generating_form'),
        'access arguments' => array('access polisci defaults'),
 							  );
-  $menu_items['admin/content/tuition_tool_forms/psychology_forms'] = array(
+  $menu_items['admin/content/tuition_tool_forms/psych_forms'] = array(
        'title' => 'Psychology Forms',
        'description' => 'Generate the Psychology TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
        'page arguments' => array('tuition_tool_forms_generating_form'),
        'access arguments' => array('access psych defaults'),
 							  );
-  $menu_items['admin/content/tuition_tool_forms/socanthro_forms'] = array(
+  $menu_items['admin/content/tuition_tool_forms/socanth_forms'] = array(
        'title' => 'SocAnthro Forms',
        'description' => 'Generate the Sociology/Anthropology TA/GA Appointment Form',
        'page callback' => 'drupal_get_form',
@@ -159,92 +159,54 @@ function get_dept_ents_from_url($form_url){
   $dept_forms_array = explode('/',$form_url);
   $dept = explode('_forms',$dept_forms_array[4]);
 
-  switch ($dept[0]){
-  case 'american':
-    return array('american_aid_entry','american_aid_type');
-    break;
-  case 'biology':
-    return array('bio_aid_entry','bio_aid_type');
-    break;
-  case 'chemistry':
-    return array('chem_aid_entry','chem_aid_type');
-    break;
-  case 'ees':
-    return array('ees_aid_entry','ees_aid_type');
-    break;
-  case 'english':
-    return array('english_aid_entry','english_aid_type');
-    break;
-  case 'epd':
-    return array('epd_aid_entry','epd_aid_type');
-    break;
-  case 'history':
-    return array('history_aid_entry','history_aid_type');
-    break;
-  case 'math':
-    return array('math_aid_entry','math_aid_type');
-    break;
-  case 'physics':
-    return array('physics_aid_entry','physics_aid_type');
-    break;
-  case 'polisci':
-    return array('polisci_aid_entry','polisci_aid_type');
-    break;
-  case 'psychology':
-    return array('psych_aid_entry','psych_aid_type');
-    break;
-  case 'socanthro':
-    return array('socanth_aid_entry','socanth_aid_type');
-    break;
-  default:
+  $title_map = array('american' => array('american_aid_entry','american_aid_type'),
+		     'bio' => array('bio_aid_entry','bio_aid_type'),
+		     'chemistry' => array('chem_aid_entry','chem_aid_type'),
+		     'ees' => array('ees_aid_entry','ees_aid_type'),
+		     'english' => array('english_aid_entry','english_aid_type'),
+		     'epd' => array('epd_aid_entry','epd_aid_type'),
+		     'history' => array('history_aid_entry','history_aid_type'),
+		     'math' => array('math_aid_entry','math_aid_type'),
+		     'physics' => array('physics_aid_entry','physics_aid_type'),
+		     'polisci' => array('polisci_aid_entry','polisci_aid_type'),
+		     'psych' => array('psych_aid_entry','psych_aid_type'),
+		     'socanth' => array('psych_aid_entry','psych_aid_type'),
+		     );
+  
+  if(isset($title_map[$dept[0]])){
+    return $title_map[$dept[0]];
+  }
+  else{
     return array('misc_aid_entry','misc_aid_type');
   }
+
 }
 
 function get_dept_title_from_url($form_url){
   $dept_forms_array = explode('/',$form_url);
   $dept = explode('_forms',$dept_forms_array[4]);
 
-  switch ($dept[0]){
-  case 'american':
-    return 'American Studies';
-    break;
-  case 'biology':
-    return 'Biological Sciences';
-    break;
-  case 'chemistry':
-    return 'Chemistry';
-    break;
-  case 'ees':
-    return 'Earth and Environmental Sciences';
-    break;
-  case 'english':
-    return 'English';
-    break;
-  case 'epd':
-    return 'Environmental Policy';
-    break;
-  case 'history':
-    return 'History';
-    break;
-  case 'math':
-    return 'Mathematics';
-    break;
-  case 'physics':
-    return 'Physics';
-    break;
-  case 'polisci':
-    return 'Political Science';
-    break;
-  case 'psychology':
-    return 'Psychology';
-    break;
-  case 'socanthro':
-    return 'Sociology';
-    break;
-  default:
-    return array('misc_aid_entry','misc_aid_type');
+  $title_map = array('american' => 'American Studies',
+		     'bio' => 'Biological Sciences',
+		     'chemistry' => 'Chemistry',
+		     'ees' => 'Earth and Environmental Sciences',
+		     'english' => 'English',
+		     'epd' => 'Environmental Policy',
+		     'history' => 'History',
+		     'math' => 'Mathematics',
+		     'physics' => 'Physics',
+		     'polisci' => 'Political Science',
+		     'psych' => 'Psychology',
+		     'socanth' => 'Sociology',
+		     );
+  
+  if(isset($title_map[$dept[0]])){
+    return $title_map[$dept[0]];
   }
+  else{
+    return '';
+  }
+
 }
 
 function get_students($term,$form_url,$aid_nid,$stipendtuition){
@@ -722,6 +684,10 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
   
   $department = get_dept_title_from_url($form_state['complete form']['#action']);
 
+  $dept_array = explode('/',$form_state['complete form']['#action']);
+  $dept_forms = explode('_forms',$dept_array[4]);
+  $dept_short = $dept_forms[0];
+
   $entities = entity_load('node',$form_state['values']['choose_students_table']);
   //get the aid type, but you only need to do it once.
   $aid_nid = $form_state['values']['aid_type_select_list'];
@@ -843,10 +809,11 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
     $pdf_list[] = generate_payroll_single_pdf($lin,$form_values['header'],$form_values['accounts']);
   }
   
-  $final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/tuition-tool-forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'-'.date("YmdGis").'.pdf';
+  //$final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/tuition-tool-forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'-'.date("YmdGis").'.pdf';
+  
+  $final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/private/'.$dept_short.'/forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'-'.date("YmdGis").'.pdf';
 
   present_filled_pdf($final_pdf,$pdf_list);
-
   //maybe delete the filled pdf, or just send a success or error message here at the end.
 
 }
@@ -885,7 +852,7 @@ function generate_payroll_single_pdf($lin,$head,$accnts){
   //$input_form = '/etc/drupal7/tuitool-dev.cas2.lehigh.edu/modules/tuition_tool_forms/fillable_forms/Payroll_Assignment.pdf';
   $input_form = drupal_get_path('module','tuition_tool_forms').'/fillable_forms/Payroll_Assignment.pdf';
   //$output_path = '/etc/drupal7/tuitool-dev.cas2.lehigh.edu/files/tuition-tool-forms/';
-  $output_path = drupal_get_path('module','tuition_tool_forms').'/../../files/tuition-tool-forms/';
+  $output_path = drupal_get_path('module','tuition_tool_forms').'/../../files/private/tuitiontoolforms/';//tuitiontoolforms
   //time to add to filename so it is unique
   $now = date("YmdGis");
   //sanatize first and last names of non-alpha-numeric characters since it's being saved as a file.
@@ -946,23 +913,16 @@ function present_filled_pdf($file_name,$pdf_list){
   exec($command);
   
   if(file_exists($file_name)){
-    
+    foreach($pdf_list as $pdf){
+      //remove the other pdfs if the final pdf has been made
+      unlink($pdf);
+    }
+
     $just_name = end(explode('/',$file_name));
+    $file_url = '/system/files'.end(explode('/private',$file_name));
 
-    drupal_set_message("File ".$just_name." Successfully Generated! Downloading..",'status');
-    
-    header('Content-Description: File Transfer');
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename=' .$just_name);
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate');
-    header('Pragma: public');
-    header('Content-Length: ' . filesize($file_name));
-
-    readfile($file_name);            
-
-    exit();
-    
+    drupal_set_message('SUCCESS! View and Download your file: <a href="'.$file_url.'">'.$just_name.'</a>.','status');
+        
   }
   else{
     drupal_set_message("Error generating file",'error');
