@@ -693,6 +693,10 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
   $aid_nid = $form_state['values']['aid_type_select_list'];
   $aid_ent = entity_load('node',array($aid_nid));
   $aid_type = $aid_ent[$aid_nid]->title;
+  //get the term code for the file name
+  $load_term = entity_load('taxonomy_term',array($form_state['values']['select_term']));
+  $term_obj = $load_term[$form_state['values']['select_term']];
+  $term_code = $term_obj->field_banner_term_code['und'][0]['value'];
 
   $lin_list = array();//the main data list.
   $error_list = array(); //a place to store errors
@@ -811,7 +815,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
   
   //$final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/tuition-tool-forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'-'.date("YmdGis").'.pdf';
   
-  $final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/private/'.$dept_short.'/forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'-'.date("YmdGis").'.pdf';
+  $final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/private/'.$dept_short.'/forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'_'.$term_code.'-PAF-'.date("mdGis").'.pdf';
 
   present_filled_pdf($final_pdf,$pdf_list);
   //maybe delete the filled pdf, or just send a success or error message here at the end.
@@ -860,7 +864,7 @@ function generate_payroll_single_pdf($lin,$head,$accnts){
   $san_first = preg_replace("/[^A-Za-z0-9]/",'',$head['first']);
   //additionall add aid type, with white spaces stipped out:
   //$strip_aid = preg_replace(' ','',$head['aid_type']);
-  $outpdf = $output_path.$san_last.'_'.$san_first.'-'.$now.'.pdf';
+  $outpdf = $output_path.$san_last.'_'.$san_first.'-PAF-'.$now.'.pdf';
   $temp_fdf = gen_temp_fdf($fdf_data);
 
   exec("pdftk ".$input_form." fill_form ".$temp_fdf." output ".$outpdf." flatten");
@@ -905,6 +909,7 @@ function present_filled_pdf($file_name,$pdf_list){
   $command = "pdftk ";
 
   foreach($pdf_list as $pdf){
+    //if the file exists
     $command .= $pdf." ";    
   }
 
@@ -927,6 +932,5 @@ function present_filled_pdf($file_name,$pdf_list){
   else{
     drupal_set_message("Error generating file",'error');
   }
-
   
 }
