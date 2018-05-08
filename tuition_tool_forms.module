@@ -586,47 +586,103 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   $total_stipend = 0;
   $total_rate = 0;
   $table_html = '';
-  
-  $account = array_pop(array_reverse($entities))->field_account_number['und'][0]['value']; //set the account number
+  $error = FALSE; //setup a variable to track if there were errors while generating this table. assume no errors unless there is one
+
+  $first_entry = array_pop(array_reverse($entities)); //set the account number
+  $first_nid = $first_entry->nid;
+  $account = $first_entry->field_account_number['und'][0]['value'];
   $position = get_position_num($account,$aid_nid);
+  $name = $first_entry->field_student_last_name['und'][0]['value'].', '.$first_entry->field_student_first_name['und'][0]['value'];
+  $first_effort = !empty($first_entry->field_effort['und'][0]['value']) ? $first_entry->field_effort['und'][0]['value'] : 0 ;
+  $first_periods = !empty($first_entry->field_pay_periods['und'][0]['value']) ? $first_entry->field_pay_periods['und'][0]['value'] : 0;
+  $first_start = !empty($first_entry->field_aid_date['und'][0]['value']) ? $first_entry->field_aid_date['und'][0]['value'] : 0;
+  $first_end = !empty($first_entry->field_aid_date['und'][0]['value2']) ? $first_entry->field_aid_date['und'][0]['value2'] : 0;
+
+  $first_error = '';
+
+  //check to make sure each of the items for the first entry in the list is filled in.
+  if($first_effort != 50){
+    $error = TRUE;
+    $first_error .= 'must be 50% Effort, ';
+  }
+  if($first_periods == 0){
+    $error = TRUE;
+    $first_error .= 'is missing Pay Periods, ';
+  }
+  if($first_start == 0){
+    $error = TRUE;
+    $first_error .= 'is missing Start Date, ';
+  }
+  if($first_end == 0){
+    $error = TRUE;
+    $first_error .= 'is missing End Date, ';
+  }
+  //only need to set start and end date if there is no errors, if there are no errors you can set both start and end date
+  if(!$error){
+      $start = new DateTime($first_start);
+      $start_date = $start->format('m-d-Y');
+      $end = new DateTime($first_end);
+      $end_date = $end->format('m-d-Y');      
+  }
+  if($error){
+    drupal_set_message('The first Entry in the list, <a href="/node/'.$first_nid.'">'.$name.'</a>, '.$first_error.'this will create an error for each entry in the list','error');
+  }
 
   foreach($entities as $curentry){
+    $cur_error = FALSE; //variable to tell if there is an error for the current entry for displaying an error message.
+    $cur_message = '';
     if($curentry->field_account_number['und'][0]['value'] != $account){
-      return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number for this form</h1>"; //Make sure the account number is the same
+      //Make sure the account number is the same
+      $error = TRUE;
+      $cur_error = TRUE;
+      $cur_message .= ' has a different account #,';
     }
-    //put a check in here to make sure start and end date are filled in, effort is below 50% and $periods is filled in fill the variables first
+    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : '0' ;
+    if($effort != 50){
+      //Make sure the % effort is 50
+      $error = TRUE;
+      $cur_error = TRUE;
+      $cur_message .= ' must be 50% Effort,';
+    }
+    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : 'error';
+    if($periods != $first_periods){
+      //Make sure Pay Periods is the same
+      $error = TRUE;
+      $cur_error = TRUE;
+      $cur_message .= ' has a different number Pay Periods,';
+    }
+    $cur_start = !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 'error';
+    if($cur_start != $first_start){
+      //Make sure Start Date is the same
+      $error = TRUE;
+      $cur_error = TRUE;
+      $cur_message .= ' has a different Start Date,';
+    }
+    $cur_end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 'error';
+    if($cur_end != $first_end){
+      //Make sure Start Date is the same
+      $error = TRUE;
+      $cur_error = TRUE;
+      $cur_message .= ' has a different End Date,';
+    }
+
     $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
-    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : 0 ;
-    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : 0;
-    
-    if(empty($curentry->field_aid_date['und'][0]['value']) || empty($curentry->field_aid_date['und'][0]['value2'])){
-      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have both start and end date filled in to be in this form. Skipping this student in this form.','error');
-      continue;
+    if($cur_error){
+      //present the error message for this entry is there is one
+      drupal_set_message('ERROR: <a href="/node/'.$curentry->nid.'">'.$name.'</a> '.rtrim($cur_message,',').'.','error');
     }
-    elseif($effort == 0 || $effort > 50){
-      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have %effort greater than 0% and less than 50% to be in this form. Skipping this student in this form.','error');
-      continue;
-    }
-    elseif($periods == 0){
-      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have pay periods greater than 0 to be in this form. Skipping this student in this form.','error');
-      continue;
-    }
-    else{
+    if(!$error){
       //now I can generate this row.
       $id =  $curentry->field_lin['und'][0]['value'];
       $phone =  $curentry->field_phone['und'][0]['value'];
       $stipend = $curentry->field_stipend['und'][0]['value'];
-      $start = new DateTime($curentry->field_aid_date['und'][0]['value']);
-      $start_date = $start->format('m-d-Y');
-      $end = new DateTime($curentry->field_aid_date['und'][0]['value2']);
-      $end_date = $end->format('m-d-Y');      
-      $rate =  $stipend/$periods;      
+      $rate =  $stipend/$first_periods;      
       //Totals
       $total_stipend = $total_stipend + $stipend;
       $total_rate = $total_rate + $rate;
       //create the row
       $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date.'</td><td>'
-	.$end_date.'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'
+	.$end_date.'</td><td>'.$first_effort.'</td><td>'.$first_periods.'</td><td>$'
 	.number_format($rate,2,'.',',').'</td><td>$'.number_format($stipend,2,'.',',').'</td></tr>';
       
       //Add the row to the list
@@ -634,6 +690,10 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
     }//end of generating a row
   }//end of the foreach entry/entity selected
 
+  if($error){
+    return "<h1>Some of the entries you've selected have errors, please see the list above.</h1><h1>Fix These errors or deselect these entries to generate this form</h1><p>NOTE: Errors indicating differences are compared to the first entry in the list you've selected.</p>";
+  }    
+  else{
   $list_top_html = '<div class="appointment-list-page-wrapper">
                     <div class="appointment-list-inner-wrapper">
                     <div class="appointment-list-header">
@@ -693,6 +753,7 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
 
 
     return $list_html;
+  }
 }
 
 function tuition_tool_forms_ta_ga_submit($form, &$form_state){
@@ -726,6 +787,11 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
     
     foreach($entities as $nid => $curentry){
       $id =  $curentry->field_lin['und'][0]['value'];
+      if(isset($error_list[$id])){
+	//if the id has already created an error then skip over all of this
+	continue;
+      }
+
       $account = $curentry->field_account_number['und'][0]['value'];
       $full_name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
       //MAKE SURE the important fields are all filled in.
@@ -749,35 +815,34 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	$end_date = new DateTime($curentry->field_aid_date['und'][0]['value2']);
 	$periods = $curentry->field_pay_periods['und'][0]['value'];
 	$effort = $curentry->field_effort['und'][0]['value'];
-      
-	if(isset($lin_list[$id]) && !(isset($error_list[$id]))){ //if the LIN (id) is already in the list and not in the error list
-	
+
+	if(isset($lin_list[$id])){ //if the LIN (id) is already in the list
 	  //CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
 	  $first_nid = $lin_list[$id]['header']['first_nid'];
 	  //START DATE
 	  if($start_date != $lin_list[$id]['header']['start']){
-	    drupal_set_message('Error: START DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the start date(s) or print out the forms separately.','error');
+	    drupal_set_message('Error: START DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the start date(s) OR print out the forms separately.</strong>','error');
 	    unset($lin_list[$id]);
 	    $error_list[$id] = 1;
 	    continue;
 	  }
 	  //END DATE
 	  elseif($end_date != $lin_list[$id]['header']['end']){
-	    drupal_set_message('Error: END DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the end date(s) or print out the forms separately.','error');
+	    drupal_set_message('Error: END DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the end date(s) OR print out the forms separately.</strong>','error');
 	    unset($lin_list[$id]);
 	    $error_list[$id] = 1;
 	    continue;
 	  }
 	  //PAY PERIODS
 	  elseif($periods != $lin_list[$id]['header']['periods']){
-	    drupal_set_message('Error: PAY PERIODS mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the Pay Periods or print out the forms separately.','error');
+	    drupal_set_message('Error: PAY PERIODS mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the Pay Periods OR print out the forms separately.</strong>','error');
 	    unset($lin_list[$id]);
 	    $error_list[$id] = 1;
 	    continue;
 	  }
 	  //EFFORT CHECK
 	  elseif($effort != $lin_list[$id]['header']['effort']){
-	    drupal_set_message('Error: % EFFORT mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. Change the %Effort or print out the forms separately.','error');
+	    drupal_set_message('Error: % EFFORT mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the %Effort OR print out the forms separately.</strong>','error');
 	    unset($lin_list[$id]);
 	    $error_list[$id] = 1;
 	    continue;
