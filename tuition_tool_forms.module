@@ -245,10 +245,21 @@ function get_students($term,$form_url,$aid_nid,$stipendtuition){
     $stipend = !empty($curentry->field_stipend['und'][0]['value']) ? '$'.number_format($curentry->field_stipend['und'][0]['value'],2,'.',',') : 0;
     $credits = !empty($curentry->field_credits['und'][0]['value']) ? $curentry->field_credits['und'][0]['value'] : 0;
     $tuition = !empty($curentry->field_tuition['und'][0]['value']) ? '$'.number_format($curentry->field_tuition['und'][0]['value'],2,'.',',') : 0;
-    $start = !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 0;
-    $end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 0;
-    $start_date = new DateTime($start);
-    $end_date = new DateTIme($end);
+    //make sure the start and end date aren't empty and display zeros if they are empty
+    if(empty($curentry->field_aid_date['und'][0]['value'])){
+      $start_date = '00-00-0000';
+    }
+    else{
+      $start = new DateTime($curentry->field_aid_date['und'][0]['value']);
+      $start_date = $start->format('m-d-Y');
+    }
+    if(empty($curentry->field_aid_date['und'][0]['value2'])){
+      $end_date = '00-00-0000';
+    }
+    else{
+      $end = new DateTime($curentry->field_aid_date['und'][0]['value2']);
+      $end_date = $end->format('m-d-Y');
+    }
     
     $students[$curentry->nid] = array(
       'last' => $curentry->field_student_last_name['und'][0]['value'],
@@ -260,8 +271,8 @@ function get_students($term,$form_url,$aid_nid,$stipendtuition){
       'periods' => $periods,
       'credits' => $credits,
       'tuition' => $tuition,
-      'start' => $start_date->format('m-d-Y'),
-      'end' => $end_date->format('m-d-Y'),
+      'start' => $start_date,
+      'end' => $end_date,
 				      );
   }
 
@@ -296,7 +307,8 @@ function tuition_tool_forms_landing($form, &$form_state){
   $form['landing_markup'] = array(
 				  '#markup'=>'<h1>This is simply a landing page for the other form generating pages to branch out from.  This page is purposefully blank</h1>');
 
-  return system_settings_form($form);
+  //return system_settings_form($form);
+  return $form;
 }
 
 
@@ -433,38 +445,42 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	'#submit' => array('tuition_tool_forms_tuition_award'),
 	'#weight' => -3,
 									);
-								   
-  //This space below here generates the form. 
-  if(!empty($form_state['values']['choose_students_table'])){
-    $students_selected = FALSE;//This variable and following for loop makes sure this doesn't activate unless students are selected
-    foreach($form_state['values']['choose_students_table'] as $value){
-      if($value > 0){
-	$students_selected = TRUE;
-	break;
-      }
-    }
-    if($students_selected){    
-      drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
-      //removes the form stuff to only display the Appointment List
-      unset($form['set_ta_ga_actions']);
-      unset($form['term_select_field_set']);
-      //unset($form['select_ta_ga_students']);
-      //unset($form['build_appointment_list']);
-      unset($form['form_building_buttons']);
-      unset($form['dev_notes']);
-      
-      $student_list = array();
-      
-      $term_id = $form_state['values']['select_term'];
-      
-      foreach( $form_state['values']['choose_students_table'] as $stud_nid){
-	if($stud_nid > 0){
-	  $student_list[] = $stud_nid;
+  //This space below here generates the TA/GA form. 
+  if($form_state['submitted'] == TRUE){
+    if(!empty($form_state['values']['choose_students_table']) && $form_state['values']['tuition_or_stipend'] == 0){
+      $students_selected = FALSE;//This variable and following for loop makes sure this doesn't activate unless at least 1 student is selected
+      foreach($form_state['values']['choose_students_table'] as $value){
+	if($value > 0){
+	  $students_selected = TRUE;
+	  break;
 	}
       }
-      $form['generated_appointment_list'] = array(
-						  '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'])
-						  );
+      if($students_selected){    
+	drupal_add_css(drupal_get_path('module','tuition_tool_forms').'/tuition_tool_forms.css');
+	//removes the form stuff to only display the Appointment List
+	unset($form['set_ta_ga_actions']);
+	unset($form['term_select_field_set']);
+	//unset($form['select_ta_ga_students']);
+	//unset($form['build_appointment_list']);
+	unset($form['form_building_buttons']);
+	unset($form['dev_notes']);
+	
+	$student_list = array();
+	
+	$term_id = $form_state['values']['select_term'];
+	
+	foreach( $form_state['values']['choose_students_table'] as $stud_nid){
+	  if($stud_nid > 0){
+	    $student_list[] = $stud_nid;
+	  }
+	}
+	$form['generated_appointment_list'] = array(
+						    '#markup' => generate_appointment_html($student_list,$term_id,$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'])
+						    );
+      }
+    }
+    else{
+      drupal_set_message("You must select students and choose 'Stipend > 0' to Generate the TA/GA form",'error');
     }
   }
   
@@ -552,6 +568,8 @@ function get_position_num($account,$aid_nid){
 }
 
 function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
+  drupal_set_message('Any Messages here will not appear when printing.','status');
+  drupal_set_message('Use <a href="'.$form_url.'"/>this link</a> to go back to the form selection page instead of refreshing the page.','status');
   $accntend = 61510;
   $dept = get_dept_title_from_url($form_url);
   $list_html = '';
@@ -567,57 +585,54 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
 
   $total_stipend = 0;
   $total_rate = 0;
-  $counter = 0;
   $table_html = '';
   
-  //I NEED TO CHECK TO MAKE SURE THE ACCOUNT NUMBER IS THE SAME
+  $account = array_pop(array_reverse($entities))->field_account_number['und'][0]['value']; //set the account number
+  $position = get_position_num($account,$aid_nid);
+
   foreach($entities as $curentry){
-    if($counter == 0){
-      $account = $curentry->field_account_number['und'][0]['value']; //set the account number to make sure they are all the same
-      //Position # from account #
-      $position = get_position_num($account,$aid_nid);
+    if($curentry->field_account_number['und'][0]['value'] != $account){
+      return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number for this form</h1>"; //Make sure the account number is the same
+    }
+    //put a check in here to make sure start and end date are filled in, effort is below 50% and $periods is filled in fill the variables first
+    $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
+    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : 0 ;
+    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : 0;
+    
+    if(empty($curentry->field_aid_date['und'][0]['value']) || empty($curentry->field_aid_date['und'][0]['value2'])){
+      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have both start and end date filled in to be in this form. Skipping this student in this form.','error');
+      continue;
+    }
+    elseif($effort == 0 || $effort > 50){
+      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have %effort greater than 0% and less than 50% to be in this form. Skipping this student in this form.','error');
+      continue;
+    }
+    elseif($periods == 0){
+      drupal_set_message('Student Entry <a href="/node/'.$curentry->nid.'">'.$name.'</a> must have pay periods greater than 0 to be in this form. Skipping this student in this form.','error');
+      continue;
     }
     else{
-      $cur_account = $curentry->field_account_number['und'][0]['value'];
-      if($cur_account != $account){
-	return "<h1>Some of the enrties you've selected have different account numbers, they must ALL have the same account number for this form</h1>";
-      }
-    }
-
-    //If I make these other fields required when entering stipend I don't need to be worried about there not being data in a field.
-    $name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
-    $id =  $curentry->field_lin['und'][0]['value'];
-    $phone =  $curentry->field_phone['und'][0]['value'];
-    $stipend = $curentry->field_stipend['und'][0]['value'];
-    //Values below here might not be required until I update the tuition tool code to make them
-    //in case I make the date values required when entering stipend:
-    //$start = $curentry->field_aid_date['und'][0]['value'];
-    //$end = $curentry->field_aid_date['und'][0]['value2'];
-    $start =  !empty($curentry->field_aid_date['und'][0]['value']) ? $curentry->field_aid_date['und'][0]['value'] : 0;
-    $end = !empty($curentry->field_aid_date['und'][0]['value2']) ? $curentry->field_aid_date['und'][0]['value2'] : 0;
-    $start_date = new DateTime($start);
-    $end_date = new DateTime($end);
-
-    $effort = !empty($curentry->field_effort['und'][0]['value']) ? $curentry->field_effort['und'][0]['value'] : '--';
-    $periods = !empty($curentry->field_pay_periods['und'][0]['value']) ? $curentry->field_pay_periods['und'][0]['value'] : '--';
-    $rate = !empty($curentry->field_pay_periods['und'][0]['value']) ? $stipend/$periods : 0;
-    //if I make effort and periods required when entering stipend:
-    //$effort = $curentry->field_effort['und'][0]['value'];
-    //$periods = $curentry->field_pay_periods['und'][0]['value'];
-    //$rate = $stipend/$periods;
-
-    //Totals
-    $total_stipend = $total_stipend + $stipend;
-    $total_rate = $total_rate + $rate;
-    //create the row
-    $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date->format('m-d-Y').'</td><td>'
-      .$end_date->format('m-d-Y').'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'
-      .number_format($rate,2,'.',',').'</td><td>$'.number_format($stipend,2,'.',',').'</td></tr>';
-
-    //Add the row to the list
-    $table_html = $table_html.$thisrow;
-    $counter += 1;
-  }
+      //now I can generate this row.
+      $id =  $curentry->field_lin['und'][0]['value'];
+      $phone =  $curentry->field_phone['und'][0]['value'];
+      $stipend = $curentry->field_stipend['und'][0]['value'];
+      $start = new DateTime($curentry->field_aid_date['und'][0]['value']);
+      $start_date = $start->format('m-d-Y');
+      $end = new DateTime($curentry->field_aid_date['und'][0]['value2']);
+      $end_date = $end->format('m-d-Y');      
+      $rate =  $stipend/$periods;      
+      //Totals
+      $total_stipend = $total_stipend + $stipend;
+      $total_rate = $total_rate + $rate;
+      //create the row
+      $thisrow = '<tr><td>'.$name.'</td><td>'.$id.'</td><td>'.$phone.'</td><td>'.$start_date.'</td><td>'
+	.$end_date.'</td><td>'.$effort.'</td><td>'.$periods.'</td><td>$'
+	.number_format($rate,2,'.',',').'</td><td>$'.number_format($stipend,2,'.',',').'</td></tr>';
+      
+      //Add the row to the list
+      $table_html = $table_html.$thisrow;
+    }//end of generating a row
+  }//end of the foreach entry/entity selected
 
   $list_top_html = '<div class="appointment-list-page-wrapper">
                     <div class="appointment-list-inner-wrapper">
@@ -723,7 +738,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
       }
       //check that effort is less than 50
       elseif($curentry->field_effort['und'][0]['value'] > 50){
-	drupal_set_message('Effort can not be greater than %50. Error on <a href="/node/'.$nid.'>node/'.$nid.'</a>'.' Skipping all entries with LIN: '.$id,'error');
+	drupal_set_message('Effort can not be greater than %50. Error on <a href="/node/'.$nid.'">node/'.$nid.'</a>'.' Skipping all entries with LIN: '.$id,'error');
 	$error_list[$id] = 1;
 	if(isset($lin_list[$id])){
 	  unset($lin_list[$id]);
@@ -823,7 +838,14 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
     else{//it's good to start generating the forms and the final form.
       $pdf_list = array();
       foreach($lin_list as $lin => $form_values){
-	$pdf_list[] = generate_payroll_single_pdf($lin,$form_values['header'],$form_values['accounts']);
+	$single_pdf = generate_payroll_single_pdf($lin,$form_values['header'],$form_values['accounts']);
+	if($single_pdf == 'ERROR-GENERATING-TEMP-FDF' || !file_exists($single_pdf)){
+	  drupal_set_message('Error Generating the pdf for '.$form_values['header']['first'].' '.$form_values['header']['last'],'error');
+	  continue;
+	}
+	else{
+	  $pdf_list[] = $single_pdf;
+	}
       }
       
       $final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/private/'.$dept_short.'/forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'_'.$term_code.'-PAF-'.date("mdGis").'.pdf';
@@ -880,12 +902,15 @@ function generate_payroll_single_pdf($lin,$head,$accnts){
   $outpdf = $output_path.$san_last.'_'.$san_first.'-PAF-'.$now.'.pdf';
   $temp_fdf = gen_temp_fdf($fdf_data);
 
-  exec("pdftk ".$input_form." fill_form ".$temp_fdf." output ".$outpdf." flatten");
-
-  unlink($temp_fdf);
-
-  //I should really put a check in here to make sure that this file exists, maybe even do a loop once or twice with the temp file to try to generate the file again.
-  return $outpdf;
+  if(file_exists($temp_fdf)){
+    exec("pdftk ".$input_form." fill_form ".$temp_fdf." output ".$outpdf." flatten");
+    unlink($temp_fdf);
+    return $outpdf;
+  }
+  else{
+    //if there's ever a problem with generating the file I could make a few more attempts to generate the file here.
+    return 'ERROR-GENERATING-TEMP-FDF';
+  }
 }
 
 function tuition_tool_forms_tuition_award($form, &$form_state){
@@ -991,7 +1016,14 @@ function tuition_tool_forms_tuition_award($form, &$form_state){
       else{//it's good to start generating the forms and the final form.
 	$pdf_list = array();
 	foreach($lin_list as $lin => $form_values){
-	  $pdf_list[] = generate_tuition_single_pdf($lin,$form_values['header'],$form_values['accounts']);
+	  $single_pdf = generate_tuition_single_pdf($lin,$form_values['header'],$form_values['accounts']);
+	  if($single_pdf == 'ERROR-GENERATING-TEMP-FDF' || !file_exists($single_pdf)){
+	    drupal_set_message('Error Generating the pdf for '.$form_values['header']['first'].' '.$form_values['header']['last'],'error');
+	    continue;
+	  }
+	  else{
+	  $pdf_list[] = $single_pdf;
+	  }
 	}
 	
 	$final_pdf = drupal_get_path('module','tuition_tool_forms').'/../../files/private/'.$dept_short.'/forms/'.str_replace(" ","",$department).'_'.str_replace(" ","",$aid_type).'_'.$term_code.'-UTAF-'.date("mdGis").'.pdf';
@@ -1041,12 +1073,15 @@ function generate_tuition_single_pdf($lin,$head,$accnts){
   $outpdf = $output_path.$san_last.'_'.$san_first.'-UTAF-'.$now.'.pdf';
   $temp_fdf = gen_temp_fdf($fdf_data);
 
-  exec("pdftk ".$input_form." fill_form ".$temp_fdf." output ".$outpdf." flatten");
-
-  unlink($temp_fdf);
-
-  //I should really put a check in here to make sure that this file exists, maybe even do a loop once or twice with the temp file to try to generate the file again.
-  return $outpdf;
+  if(file_exists($temp_fdf)){
+    exec("pdftk ".$input_form." fill_form ".$temp_fdf." output ".$outpdf." flatten");
+    unlink($temp_fdf);
+    return $outpdf;
+  }
+  else{
+    //if there's ever a problem with generating the file I could make a few more attempts to generate the file here.
+    return 'ERROR-GENERATING-TEMP-FDF';
+  }
 }
 
 function gen_temp_fdf($data){
