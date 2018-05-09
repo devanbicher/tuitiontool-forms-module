@@ -208,13 +208,26 @@ function get_dept_title_from_url($form_url){
   }
 
 }
-
-function get_students($term,$form_url,$aid_nid,$stipendtuition){
+function get_students($term,$form_url,$aid_nid,$stipendtuition,$sortorder){
+  //function get_students($term,$form_url,$aid_nid,$stipendtuition){
   $dept_ents = get_dept_ents_from_url($form_url);
   $entry=$dept_ents[0];
   $aid=$dept_ents[1];
 
   $students = array();
+
+  $sort_field = array(
+		      'last' => array(0=>'field_student_last_name', 1=> 'value'),
+		      'first' => array(0=>'field_student_first_name', 1=> 'value'),
+		      'account' => array(0=>'field_account_number', 1=> 'value'),
+		      'effort' => array(0=>'field_effort', 1=> 'value'),
+		      'periods' => array(0=>'field_pay_periods', 1=> 'value'),
+		      'stipend' => array(0=>'field_stipend', 1=> 'value'),
+		      'credits' => array(0=>'field_credits', 1=> 'value'),
+		      'tuition' => array(0=>'field_tuition', 1=> 'value'),
+		      'start' => array(0=>'field_aid_date', 1=> 'value'),
+		      'end' => array(0=>'field_aid_date', 1=> 'value2'),
+		      );
 
   //NOW DO A FIELD QUERY ON THE AID ENTRY AND RETURN A LIST OF RELEVANT VALUES INDEXED BY THE NID
   $entry_query = new EntityFieldQuery;
@@ -233,6 +246,9 @@ function get_students($term,$form_url,$aid_nid,$stipendtuition){
     //STIPEND IS THIS REQUIRED? IT FILTERS OUT STIPEND < 0
     $entry_query->fieldCondition('field_stipend','value',0,'>');
   }
+
+  //Here is where the field order by stuff is going to go, start with last name only
+  $entry_query->fieldOrderBy($sort_field[$sortorder][0],$sort_field[$sortorder][1],'ASC');
 
   
   $match_entries = $entry_query->execute();
@@ -390,13 +406,26 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 			 'method' => 'replace',
 			 'effect' => 'fade'),
 											      );
-    $form['term_select_field_set']['select_aid_type']['tuition_or_stipend'] = array(
+  $form['term_select_field_set']['select_aid_type']['tuition_or_stipend'] = array(
         '#type' => 'radios',
 	'#title' => t('FOURTH: Choose which Field, Tuition or Stipend, Students must have a value for to be in the list'),
 	'#weight' => -2,
 	'#options' => array(0 => t('Stipend > 0'), 1 => t('Tuition > 0')),
 	'#default_value' => 0,
 	'#description' => t('Please choose if the list of students should be populated with students with stipend > 0 (for TA/GA Appointment list or Payroll assignment form) or Tuition > 0 (for Tuition Award form)'),
+	'#ajax' => array(
+			 'callback' => 'create_student_choices',
+			 'wrapper' => 'select-students-table',
+			 'method' => 'replace',
+			 'effect' => 'fade'),
+							       );
+  $form['term_select_field_set']['select_aid_type']['column_sort'] = array(
+        '#type' => 'radios',
+	'#title' => t('OPTIONALLY: Choose a column to sort the student entries by'),
+	'#weight' => -1,
+	'#options' => $header,
+	'#default_value' => 'last',
+	'#description' => t('You can choose a different column to sort the student list by, default is last name. NOTE: Sorting by a column with an empty value will remove those entries!'),
 	'#ajax' => array(
 			 'callback' => 'create_student_choices',
 			 'wrapper' => 'select-students-table',
@@ -413,7 +442,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	'#type' => 'tableselect',
 	'#header' => !empty($form_state['values']['select_term']) ? $header : $blank_header,
 	'#options' =>(!empty($form_state['values']['select_term']) && !empty($form_state['values']['aid_type_select_list'])) ? 
-	get_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'],$form_state['values']['tuition_or_stipend']) : $blank_table,
+	get_students($form_state['values']['select_term'],$form_state['complete form']['#action'],$form_state['values']['aid_type_select_list'],$form_state['values']['tuition_or_stipend'],$form_state['values']['column_sort']) : $blank_table,
 	'#weight' => 10,
 								  );
   $form['term_select_field_set']['dev_notes'] = array(
@@ -445,6 +474,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	'#submit' => array('tuition_tool_forms_tuition_award'),
 	'#weight' => -3,
 									);
+
   //This space below here generates the TA/GA form. 
   if($form_state['submitted'] == TRUE){
     if(!empty($form_state['values']['choose_students_table']) && $form_state['values']['tuition_or_stipend'] == 0){
