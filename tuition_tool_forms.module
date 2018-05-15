@@ -817,11 +817,13 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
     $aid_nid = $form_state['values']['aid_type_select_list'];
     $aid_ent = entity_load('node',array($aid_nid));
     $aid_type = $aid_ent[$aid_nid]->title;
+    $is_fellowship = strpos(strtolower($aid_type),'fellowship');
     //get the term code for the file name
     $load_term = entity_load('taxonomy_term',array($form_state['values']['select_term']));
     $term_obj = $load_term[$form_state['values']['select_term']];
-    $term_code = $term_obj->field_banner_term_code['und'][0]['value'];
-    
+    $term_code = $term_obj->field_banner_term_code['und'][0]['value'];    
+    $term_title = $term_obj->name;
+
     $lin_list = array();//the main data list.
     $error_list = array(); //a place to store errors
     
@@ -835,26 +837,46 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
       $account = $curentry->field_account_number['und'][0]['value'];
       $full_name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
       //MAKE SURE the important fields are all filled in.
-      if(empty($curentry->field_aid_date['und'][0]['value']) || empty($curentry->field_aid_date['und'][0]['value2']) || empty($curentry->field_pay_periods['und'][0]['value']) || empty($curentry->field_effort['und'][0]['value']) || empty($curentry->field_stipend['und'][0]['value'])){
-	drupal_set_message("Stipend, Account, Start Date, End Date, Pay Periods, and Effort ALL must be filled in for each entry. Skipping all entries for ".$full_name,'error');
-	$error_list[$id] = 1;
-	if(isset($lin_list[$id])){
-	  unset($lin_list[$id]);
-	}
-      }
-      //check that effort is less than 50
-      elseif($curentry->field_effort['und'][0]['value'] > 50){
-	drupal_set_message('Effort can not be greater than %50. Error on <a href="/node/'.$nid.'">node/'.$nid.'</a>'.' Skipping all entries with LIN: '.$id,'error');
+      if(empty($curentry->field_aid_date['und'][0]['value']) || empty($curentry->field_aid_date['und'][0]['value2']) || empty($curentry->field_pay_periods['und'][0]['value']) || empty($curentry->field_stipend['und'][0]['value'])){
+	drupal_set_message("Stipend, Account, Start Date, End Date, and Pay Periods, ALL must be filled in for each entry. Skipping all entries for ".$full_name,'error');
 	$error_list[$id] = 1;
 	if(isset($lin_list[$id])){
 	  unset($lin_list[$id]);
 	}
       }
       else{															    
+	if(empty($curentry->field_effort['und'][0]['value'])){
+	    if($is_fellowship === FALSE){
+	      drupal_set_message("Effort must be filled in for each entry. Skipping all entries for ".$full_name,'error');
+	      $error_list[$id] = 1;
+	      if(isset($lin_list[$id])){
+		unset($lin_list[$id]);
+	      }
+	      continue;
+	    }
+	    else{
+	      $effort = 0;
+	    }
+	  }
+	  else{
+	    $effort = $curentry->field_effort['und'][0]['value'];
+	    //check that effort is less than 50
+	    if($effort > 50){
+	      //This is an error unless it's a summer RA
+	      if(!(strtolower(trim($aid_type)) == 'ra' && !(strpos(strtolower($term_title),'summer') === FALSE))){
+		drupal_set_message('Effort cannot be greater than %50. Error on <a href="/node/'.$nid.'">node/'.$nid.'</a>'.' Skipping all entries with LIN: '.$id,'error');
+		$error_list[$id] = 1;
+		if(isset($lin_list[$id])){
+		  unset($lin_list[$id]);
+		}
+		continue;
+	      }
+	    }
+	  }
+
 	$start_date = new DateTime($curentry->field_aid_date['und'][0]['value']);
 	$end_date = new DateTime($curentry->field_aid_date['und'][0]['value2']);
 	$periods = $curentry->field_pay_periods['und'][0]['value'];
-	$effort = $curentry->field_effort['und'][0]['value'];
 
 	if(isset($lin_list[$id])){ //if the LIN (id) is already in the list
 	  //CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
