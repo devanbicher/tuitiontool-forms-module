@@ -881,24 +881,6 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	if(isset($lin_list[$id])){ //if the LIN (id) is already in the list
 	  //CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
 	  $first_nid = $lin_list[$id]['header']['first_nid'];
-	  
-	  /*
-	  //START DATE
-	  if($start_date != $lin_list[$id]['header']['start']){
-	    drupal_set_message('Error: START DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the start date(s) OR print out the forms separately.</strong>','error');
-	    unset($lin_list[$id]);
-	    $error_list[$id] = 1;
-	    continue;
-	  }
-	  //END DATE
-	  elseif($end_date != $lin_list[$id]['header']['end']){
-	    drupal_set_message('Error: END DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the end date(s) OR print out the forms separately.</strong>','error');
-	    unset($lin_list[$id]);
-	    $error_list[$id] = 1;
-	    continue;
-	  }
-	  */
-
 	  //PAY PERIODS
 	  if($periods != $lin_list[$id]['header']['periods']){
 	    drupal_set_message('Error: PAY PERIODS mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the Pay Periods OR print out the forms separately.</strong>','error');
@@ -929,8 +911,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	    continue;
 	  }
 	  else{
-	    //Add the account and stipend to the list
-	    // $lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];//old method for storing stipend and account
+	    //Add the account, stipend, start and end date to the list
 	    $lin_list[$id]['accounts'][$account] = array(
 					       'stipend' => $curentry->field_stipend['und'][0]['value'],
 					       'start' => $start_date,
@@ -954,8 +935,6 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 					   'aid_type' => $aid_type,
 					   'periods' => $periods,
 					   'effort' => $effort,
-					   //'start' => $start_date,
-					   //'end' => $end_date,
 					   'total' => $curentry->field_stipend['und'][0]['value'],
 					   'first_nid' => $nid,
 					   );
@@ -966,8 +945,6 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 					       'start' => $start_date,
 					       'end' => $end_date,
 						       );
-	  //$lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];//old method for storing stipend and account
-
 	}
 	//array of information completed
       } 
