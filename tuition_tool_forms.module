@@ -464,7 +464,7 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 								   );
   $form['form_building_buttons']['generate_payroll_asignment_form'] = array(
         '#type' => 'submit',
-	'#value' => 'Generate Payroll Asignment Forms',
+	'#value' => 'Generate Payroll Assignment Forms',
 	'#submit' => array('tuition_tool_forms_payroll_assignment'),
 	'#weight' => -4,
 								   );
@@ -881,6 +881,8 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	if(isset($lin_list[$id])){ //if the LIN (id) is already in the list
 	  //CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
 	  $first_nid = $lin_list[$id]['header']['first_nid'];
+	  
+	  /*
 	  //START DATE
 	  if($start_date != $lin_list[$id]['header']['start']){
 	    drupal_set_message('Error: START DATE mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the start date(s) OR print out the forms separately.</strong>','error');
@@ -895,8 +897,10 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	    $error_list[$id] = 1;
 	    continue;
 	  }
+	  */
+
 	  //PAY PERIODS
-	  elseif($periods != $lin_list[$id]['header']['periods']){
+	  if($periods != $lin_list[$id]['header']['periods']){
 	    drupal_set_message('Error: PAY PERIODS mismatch between <a href="/node/'.$nid.'">node/'.$nid.'</a> and <a href="/node/'.$first_nid.'">node/'.$first_nid.'</a>. '.$full_name.' will not be in the PDF. <strong>Change the Pay Periods OR print out the forms separately.</strong>','error');
 	    unset($lin_list[$id]);
 	    $error_list[$id] = 1;
@@ -926,7 +930,13 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	  }
 	  else{
 	    //Add the account and stipend to the list
-	    $lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];
+	    // $lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];//old method for storing stipend and account
+	    $lin_list[$id]['accounts'][$account] = array(
+					       'stipend' => $curentry->field_stipend['und'][0]['value'],
+					       'start' => $start_date,
+					       'end' => $end_date,
+						       );
+
 	    $lin_list[$id]['header']['total'] += $curentry->field_stipend['und'][0]['value']; //increase the value for the total
 	  }
 	}
@@ -944,14 +954,20 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 					   'aid_type' => $aid_type,
 					   'periods' => $periods,
 					   'effort' => $effort,
-					   'start' => $start_date,
-					   'end' => $end_date,
+					   //'start' => $start_date,
+					   //'end' => $end_date,
 					   'total' => $curentry->field_stipend['und'][0]['value'],
 					   'first_nid' => $nid,
 					   );
 	  //create the accounts part of the list
 	  $lin_list[$id]['accounts'] = array();
-	  $lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];
+	  $lin_list[$id]['accounts'][$account] = array(
+					       'stipend' => $curentry->field_stipend['und'][0]['value'],
+					       'start' => $start_date,
+					       'end' => $end_date,
+						       );
+	  //$lin_list[$id]['accounts'][$account] = $curentry->field_stipend['und'][0]['value'];//old method for storing stipend and account
+
 	}
 	//array of information completed
       } 
@@ -1004,10 +1020,11 @@ function generate_payroll_single_pdf($lin,$head,$accnts){
               '<</T(FTE)/V('.$head['effort'].'%)>>'.
     '<</T(Annual Salary)/V($'.number_format($head['total'],2,'.',',').')>>';
   //Now fill in the rest of the data with a foreach loop
-  $start = $head['start']->format('m-d-Y');
-  $end = $head['end']->format('m-d-Y');
   $count = 1;
-  foreach($accnts as $account => $stipend){
+  foreach($accnts as $account => $stipinf){
+    $start = $stipinf['start']->format('m-d-Y');
+    $end = $stipinf['end']->format('m-d-Y');
+    $stipend = $stipinf['stipend'];
     $i = strval($count);
     $fdf_data .= '<</T(Index '.$i.')/V('.$account.')>>'.
                  '<</T(Index Distribution '.$i.')/V('.number_format(100*($stipend/$head['total']),2,'.',',').'%)>>'.
