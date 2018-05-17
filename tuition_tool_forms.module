@@ -128,8 +128,6 @@ function get_years_for_forms(){
 }
 
 function get_terms_for_forms($year){
-  //need to use a query function to get terms for the current year.
-
   $terms = array();
 
   $ent_query = new EntityFieldQuery;
@@ -155,7 +153,6 @@ function get_terms_for_forms($year){
 
 function get_dept_ents_from_url($form_url){
   //only used in get_students
-
   $dept_forms_array = explode('/',$form_url);
   $dept = explode('_forms',$dept_forms_array[4]);
 
@@ -209,7 +206,6 @@ function get_dept_title_from_url($form_url){
 
 }
 function get_students($term,$form_url,$aid_nid,$stipendtuition,$sortorder){
-  //function get_students($term,$form_url,$aid_nid,$stipendtuition){
   $dept_ents = get_dept_ents_from_url($form_url);
   $entry=$dept_ents[0];
   $aid=$dept_ents[1];
@@ -323,7 +319,6 @@ function tuition_tool_forms_landing($form, &$form_state){
   $form['landing_markup'] = array(
 				  '#markup'=>'<h1>This is simply a landing page for the other form generating pages to branch out from.  This page is purposefully blank</h1>');
 
-  //return system_settings_form($form);
   return $form;
 }
 
@@ -348,7 +343,6 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 		  'start' => 'Start Date',
 		  'end' => 'End Date',
 		  );
-
 
   $form['set_ta_ga_actions'] = array(
 	  '#type' => 'actions',
@@ -490,8 +484,6 @@ function tuition_tool_forms_generating_form($form, &$form_state){
 	//removes the form stuff to only display the Appointment List
 	unset($form['set_ta_ga_actions']);
 	unset($form['term_select_field_set']);
-	//unset($form['select_ta_ga_students']);
-	//unset($form['build_appointment_list']);
 	unset($form['form_building_buttons']);
 	unset($form['dev_notes']);
 	
@@ -514,7 +506,6 @@ function tuition_tool_forms_generating_form($form, &$form_state){
     }
   }
   
-  //return system_settings_form($form); this puts the save config button on the bottom.
   return $form;
 }
 
@@ -531,11 +522,6 @@ function alter_term_choices($form,$form_state){
 }
 
 function get_position_num($account,$aid_title){
-
-  //  $load_aid_type = entity_load('node',array($aid_nid));
-  //get the aid title for the wierd departments
-  //  $aid_title = strtolower(trim($load_aid_type[$aid_nid]->title));
-
   switch ($account){
   case '211105': 
     $position = 'GT9960'; //Bio
@@ -610,8 +596,6 @@ function get_account_ending($aid_title){
   }
 }
 
-
-
 function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   drupal_set_message('Any Messages here will not appear when printing.','status');
   drupal_set_message('Use <a href="'.$form_url.'"/>this link</a> to go back to the form selection page instead of refreshing the page.','status');
@@ -639,7 +623,6 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   $first_entry = array_pop(array_reverse($entities)); //set the account number
   $first_nid = $first_entry->nid;
   $account = $first_entry->field_account_number['und'][0]['value'];
-  //$position = get_position_num($account,$aid_nid);
   $position = get_position_num($account,$aid_title);
   $name = $first_entry->field_student_last_name['und'][0]['value'].', '.$first_entry->field_student_first_name['und'][0]['value'];
   $first_effort = !empty($first_entry->field_effort['und'][0]['value']) ? $first_entry->field_effort['und'][0]['value'] : 0 ;
@@ -779,7 +762,6 @@ function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   $list_html = $list_html.$table_header;
   $list_html = $list_html.$table_html;
 
-  //Don't forget to style this final row differently
   $table_footer = '<tr class="last-row"><td></td><td></td><td></td><td></td><td></td><td></td>
                    <td class="final-totals"><strong>Totals:</strong></td><td class="final-totals"> $'.number_format($total_rate,2,'.',',')
                    .'</td><td class="final-totals"> $'.number_format($total_stipend,2,'.',',').'</td></tr></table>';
@@ -898,7 +880,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 	$periods = $curentry->field_pay_periods['und'][0]['value'];
 
 	if(isset($lin_list[$id])){ //if the LIN (id) is already in the list
-	  //CHECK ALL START_DATE, END_DATE, EFFORT, PERIODS
+	  //CHECK ALL EFFORT, PERIODS, and make sure ACCOUNT NUMBERs are not more than 5 and that there are no duplicate account numbers
 	  $first_nid = $lin_list[$id]['header']['first_nid'];
 	  //PAY PERIODS
 	  if($periods != $lin_list[$id]['header']['periods']){
@@ -1000,9 +982,7 @@ function tuition_tool_forms_payroll_assignment($form, &$form_state){
 }
 
 function generate_payroll_single_pdf($lin,$head,$accnts){
-  //don't forget to convert the DateTime objects to readable format.
-  //FIRST construct the header info before iteration through the account numbers
-  
+  //FIRST construct the header info before iteration through the account numbers  
   $fdf_data = '<</T(Last Name)/V('.$head['last'].')>>'.
               '<</T(First Name)/V('.$head['first'].')>>'.
               '<</T(Department where Payroll records are kept)/V('.$head['dept'].')>>'.
@@ -1038,7 +1018,7 @@ function generate_payroll_single_pdf($lin,$head,$accnts){
   $san_last = preg_replace("/[^A-Za-z0-9]/",'',$head['last']);
   $san_first = preg_replace("/[^A-Za-z0-9]/",'',$head['first']);
   //additionall add aid type, with white spaces stipped out:
-  //$strip_aid = preg_replace(' ','',$head['aid_type']);
+
   $outpdf = $output_path.$san_last.'_'.$san_first.'-PAF-'.$now.'.pdf';
   $temp_fdf = gen_temp_fdf($fdf_data);
 
@@ -1209,7 +1189,6 @@ function generate_tuition_single_pdf($lin,$head,$accnts){
   $san_last = preg_replace("/[^A-Za-z0-9]/",'',$head['last']);
   $san_first = preg_replace("/[^A-Za-z0-9]/",'',$head['first']);
   //additionall add aid type, with white spaces stipped out:
-  //$strip_aid = preg_replace(' ','',$head['aid_type']);
   $outpdf = $output_path.$san_last.'_'.$san_first.'-UTAF-'.$now.'.pdf';
   $temp_fdf = gen_temp_fdf($fdf_data);
 
