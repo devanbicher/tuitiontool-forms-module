@@ -530,11 +530,12 @@ function alter_term_choices($form,$form_state){
   return $form['term_select_field_set'];
 }
 
-//function get_position_num($account){
-function get_position_num($account,$aid_nid){
-  $load_aid_type = entity_load('node',array($aid_nid));
+function get_position_num($account,$aid_title){
+
+  //  $load_aid_type = entity_load('node',array($aid_nid));
   //get the aid title for the wierd departments
-  $aid_title = strtolower(trim($load_aid_type[$aid_nid]->title));
+  //  $aid_title = strtolower(trim($load_aid_type[$aid_nid]->title));
+
   switch ($account){
   case '211105': 
     $position = 'GT9960'; //Bio
@@ -597,31 +598,49 @@ function get_position_num($account,$aid_nid){
       return $position;
 }
 
+function get_account_ending($aid_title){
+  if($aid_title == 'ta'){
+    return 61510;
+  }
+  elseif($aid_title == 'ra' || !(strpos($aid_title,'fellowship') === FALSE)){
+    return 61530;
+  }
+  else{
+    return '';
+  }
+}
+
+
+
 function generate_appointment_html($stud_list,$term_id,$form_url,$aid_nid){
   drupal_set_message('Any Messages here will not appear when printing.','status');
   drupal_set_message('Use <a href="'.$form_url.'"/>this link</a> to go back to the form selection page instead of refreshing the page.','status');
-  $accntend = 61510;
-  $dept = get_dept_title_from_url($form_url);
-  $list_html = '';
 
-  $term_load = entity_load('taxonomy_term',array($term_id));
-  
+  $dept = get_dept_title_from_url($form_url);
+
+  $term_load = entity_load('taxonomy_term',array($term_id));  
   $term_ent_vals = array_values($term_load);
   $term_ent = $term_ent_vals[0];
-  
   $term_code = $term_ent->field_banner_term_code['und'][0]['value'];
-
-  $entities = entity_load('node',$stud_list);
 
   $total_stipend = 0;
   $total_rate = 0;
   $table_html = '';
+  $list_html = '';
   $error = FALSE; //setup a variable to track if there were errors while generating this table. assume no errors unless there is one
+
+  //Get the aid title, all lowercase for position number and the number at the end of the account number
+  $load_aid_type = entity_load('node',array($aid_nid));
+  $aid_title = strtolower(trim($load_aid_type[$aid_nid]->title));
+  $accntend = get_account_ending($aid_title);
+  
+  $entities = entity_load('node',$stud_list); //load in the entries for fetching info and the first student in the list
 
   $first_entry = array_pop(array_reverse($entities)); //set the account number
   $first_nid = $first_entry->nid;
   $account = $first_entry->field_account_number['und'][0]['value'];
-  $position = get_position_num($account,$aid_nid);
+  //$position = get_position_num($account,$aid_nid);
+  $position = get_position_num($account,$aid_title);
   $name = $first_entry->field_student_last_name['und'][0]['value'].', '.$first_entry->field_student_first_name['und'][0]['value'];
   $first_effort = !empty($first_entry->field_effort['und'][0]['value']) ? $first_entry->field_effort['und'][0]['value'] : 0 ;
   $first_periods = !empty($first_entry->field_pay_periods['und'][0]['value']) ? $first_entry->field_pay_periods['und'][0]['value'] : 0;
