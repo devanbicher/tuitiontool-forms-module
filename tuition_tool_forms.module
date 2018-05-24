@@ -1065,6 +1065,11 @@ function tuition_tool_forms_tuition_award($form, &$form_state){
       $error_list = array(); //a place to store errors
       foreach($entities as $nid => $curentry){
 	$id =  $curentry->field_lin['und'][0]['value'];
+	if(isset($error_list[$id])){
+	  //this id is in the error list, we can skip everything
+	  continue;
+	}
+
 	$account = $curentry->field_account_number['und'][0]['value'];
 	$full_name = $curentry->field_student_last_name['und'][0]['value'].', '.$curentry->field_student_first_name['und'][0]['value'];
 
@@ -1077,7 +1082,7 @@ function tuition_tool_forms_tuition_award($form, &$form_state){
 	}
 	else{
 	  //MAKE SURE the important fields are all filled in.
-	  if(isset($lin_list[$id]) && !(isset($error_list[$id]))){ //if the LIN (id) is already in the list and not in the error list
+	  if(isset($lin_list[$id])){ //if the LIN (id) is already in the list and not in the error list
 	    if(isset($lin_list[$id]['accounts'][$account])){
 	      drupal_set_message('ERROR: Account number '.$account.' is already in the list for '.$full_name.'. It cannot be in more than once. Check <a href="/node/'.$nid.'">node/'.$nid.'</a> to change this.','error');
 	      unset($lin_list[$id]);
