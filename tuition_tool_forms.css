@@ -58,8 +58,8 @@ table.appointment-table tr.table-header td{
 
 .appointment-list-page-wrapper th{
     padding: 4pt;
-    background-color:black;
-    color:white;
+    background-color: #000000;
+    color: #FFFFFF;
     font-weight: bold;
 }
 
@@ -212,6 +212,7 @@ html {
 body{
     margin: .5625in .8125in;
     -webkit-print-color-adjust:exact;
+    /*color-adjust: exact; this was for firefox*/
     font: normal 7pt "Arial", sans-serif;
 }
 
@@ -270,15 +271,15 @@ h1.appointment-list-head-text{
     
 table.appointment-table tr.table-header td{
     padding: 4pt;
-    background-color: #000001;
-    color: #FFFFFE;
+    background-color: #000000;
+    color: #FFFFFF;
     font-weight: bold;
 }
 
 .appointment-list-page-wrapper th{
     padding: 4pt;
-    background-color:black;
-    color:white;
+    background-color: #000000;
+    color:#FFFFFF !important;
     font-weight: bold;
 }
 
